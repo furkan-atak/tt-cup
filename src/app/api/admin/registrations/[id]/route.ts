@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {isAdmin} from "@/lib/cookies";
 import {jsonError} from "@/lib/http";
-import {prisma} from "@/lib/prisma";
+import {getPrisma} from "@/lib/prisma";
 
 const reviewSchema = z.object({
     decision: z.enum(["APPROVED", "REJECTED"]),
@@ -15,6 +15,7 @@ export async function PATCH(
         return jsonError("Admin only.", 403);
     }
 
+    const prisma = getPrisma();
     let body: unknown;
     try {
         body = await request.json();

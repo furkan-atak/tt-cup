@@ -1,5 +1,5 @@
 import type {GameScore} from "@/lib/match-rules";
-import {prisma} from "@/lib/prisma";
+import {getPrisma} from "@/lib/prisma";
 
 export function jsonError(message: string, status = 400) {
     return Response.json({error: message}, {status});
@@ -10,6 +10,7 @@ export async function findDuplicateName(
     lastNameNorm: string,
     exceptId?: string,
 ) {
+    const prisma = getPrisma();
     return prisma.player.findFirst({
         where: {
             firstNameNorm,

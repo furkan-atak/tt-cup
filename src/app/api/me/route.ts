@@ -1,9 +1,10 @@
 import {getClaimedPlayerId} from "@/lib/cookies";
-import {prisma} from "@/lib/prisma";
+import {getPrisma} from "@/lib/prisma";
 import {serializePlayer} from "@/lib/serialize";
 import {getSettings} from "@/lib/settings";
 
 export async function GET() {
+    const prisma = getPrisma();
     const [settings, claimedId] = await Promise.all([
         getSettings(),
         getClaimedPlayerId(),

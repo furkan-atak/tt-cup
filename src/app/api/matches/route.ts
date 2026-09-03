@@ -1,5 +1,5 @@
 import {parseGames} from "@/lib/match-rules";
-import {prisma} from "@/lib/prisma";
+import {getPrisma} from "@/lib/prisma";
 import {serializePlayer} from "@/lib/serialize";
 
 const PAGE_SIZE = 20;
@@ -31,6 +31,7 @@ function serializeMatch(match: {
 }
 
 export async function GET(request: Request) {
+    const prisma = getPrisma();
     const {searchParams} = new URL(request.url);
     const fixtures = searchParams.get("fixtures") === "1";
     const offset = Math.max(0, Number(searchParams.get("offset") ?? 0) || 0);

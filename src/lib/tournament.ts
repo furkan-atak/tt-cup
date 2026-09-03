@@ -1,4 +1,4 @@
-import {prisma} from "@/lib/prisma";
+import {getPrisma} from "@/lib/prisma";
 
 type PlayerState = {
     wins: number;
@@ -7,6 +7,7 @@ type PlayerState = {
 };
 
 export async function recomputeTournamentState() {
+    const prisma = getPrisma();
     const players = await prisma.player.findMany({
         where: {registrationStatus: "APPROVED"},
         select: {id: true},
@@ -32,7 +33,7 @@ export async function recomputeTournamentState() {
         loser.eliminatedAt = match.confirmedAt ?? match.playedAt;
     }
 
-    await prisma.$transaction(
+    await Promise.all(
         [...state.entries()].map(([id, stats]) => prisma.player.update({where: {id}, data: stats})),
     );
 }

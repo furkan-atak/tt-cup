@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tt-cup",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-03",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "tt-cup"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tt-cup-db",
+      "database_id": "f2b3fd9e-f9aa-4c9b-8b9a-c20ef1295469",
+      "migrations_dir": "prisma/migrations"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

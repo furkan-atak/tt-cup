@@ -1,9 +1,15 @@
-import { PrismaClient } from "@prisma/client";
+import {getCloudflareContext} from "@opennextjs/cloudflare";
+import type {D1Database} from "@cloudflare/workers-types";
+import {PrismaD1} from "@prisma/adapter-d1";
+import {PrismaClient} from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+declare global {
+    interface CloudflareEnv {
+        DB: D1Database;
+    }
+}
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+export function getPrisma() {
+    const adapter = new PrismaD1(getCloudflareContext().env.DB);
+    return new PrismaClient({adapter});
 }

@@ -2,7 +2,7 @@
 
 Single-page company elimination tournament: people register, play **best of 3**, and winners advance to the next round.
 
-This is a **Next.js** app (the page **and** a small API) with a **SQLite** file on disk.
+This is a **Next.js** app (the page **and** a small API) with local SQLite and Cloudflare D1 in production.
 
 ## Run locally
 
@@ -38,3 +38,14 @@ Open [http://localhost:3000](http://localhost:3000).
 - `npm run dev` — local server
 - `npm run db:setup` — create SQLite tables and seed demo players
 - `npm run db:seed` — reset demo data
+
+## Deploy to Cloudflare
+
+The Worker uses the `DB` binding configured in `wrangler.jsonc`. Apply the schema before deploying a new D1 database:
+
+```bash
+npm run db:d1:remote
+npm run deploy
+```
+
+Use `npm run preview` to build and test with the local D1 database. Initialize it with `npm run db:d1:local`.

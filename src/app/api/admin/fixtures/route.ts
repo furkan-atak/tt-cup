@@ -1,12 +1,13 @@
 import {isAdmin} from "@/lib/cookies";
 import {jsonError} from "@/lib/http";
-import {prisma} from "@/lib/prisma";
+import {getPrisma} from "@/lib/prisma";
 
 export async function POST() {
     if (!(await isAdmin())) {
         return jsonError("Admin only.", 403);
     }
 
+    const prisma = getPrisma();
     const [pendingCount, latestRound] = await Promise.all([
         prisma.match.count({where: {status: "PENDING"}}),
         prisma.match.aggregate({_max: {round: true}}),

@@ -2,7 +2,7 @@ import {z} from "zod";
 import {getClaimedPlayerId, isAdmin} from "@/lib/cookies";
 import {findDuplicateName, jsonError} from "@/lib/http";
 import {cleanNamePart, isValidNamePart, normalizeNamePart} from "@/lib/names";
-import {prisma} from "@/lib/prisma";
+import {getPrisma} from "@/lib/prisma";
 import {serializePlayer} from "@/lib/serialize";
 
 async function canMutate(playerId: string) {
@@ -17,6 +17,7 @@ export async function GET(
     _request: Request,
     ctx: RouteContext<"/api/players/[id]">,
 ) {
+    const prisma = getPrisma();
     const {id} = await ctx.params;
     const player = await prisma.player.findUnique({where: {id}});
     if (!player || player.registrationStatus !== "APPROVED") {
@@ -58,6 +59,7 @@ export async function PATCH(
     request: Request,
     ctx: RouteContext<"/api/players/[id]">,
 ) {
+    const prisma = getPrisma();
     const {id} = await ctx.params;
     if (!(await canMutate(id))) {
         return jsonError("You can only edit your own listing.", 403);
@@ -127,6 +129,7 @@ export async function DELETE(
     _request: Request,
     ctx: RouteContext<"/api/players/[id]">,
 ) {
+    const prisma = getPrisma();
     const {id} = await ctx.params;
     if (!(await canMutate(id))) {
         return jsonError("You can only remove your own listing.", 403);

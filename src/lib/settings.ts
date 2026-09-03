@@ -1,8 +1,9 @@
-import {prisma} from "@/lib/prisma";
+import {getPrisma} from "@/lib/prisma";
 
 const SETTINGS_ID = "default";
 
 export async function getSettings() {
+    const prisma = getPrisma();
     const existing = await prisma.settings.findUnique({
         where: {id: SETTINGS_ID},
     });
@@ -25,6 +26,7 @@ export async function updateSettings(data: {
     endDate?: Date | null;
 }) {
     await getSettings();
+    const prisma = getPrisma();
     return prisma.settings.update({
         where: {id: SETTINGS_ID},
         data,

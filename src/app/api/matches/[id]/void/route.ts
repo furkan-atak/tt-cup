@@ -1,6 +1,6 @@
 import {isAdmin} from "@/lib/cookies";
 import {jsonError} from "@/lib/http";
-import {prisma} from "@/lib/prisma";
+import {getPrisma} from "@/lib/prisma";
 import {recomputeTournamentState} from "@/lib/tournament";
 
 export async function POST(
@@ -12,6 +12,7 @@ export async function POST(
         return jsonError("Admin only.", 403);
     }
 
+    const prisma = getPrisma();
     const match = await prisma.match.findUnique({where: {id}});
     if (!match) {
         return jsonError("Match not found.", 404);

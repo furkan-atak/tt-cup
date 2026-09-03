@@ -1,7 +1,7 @@
 import {isAdmin} from "@/lib/cookies";
 import {jsonError, parseGamePayload} from "@/lib/http";
 import {matchWinnerFromGames, validateBestOfThree} from "@/lib/match-rules";
-import {prisma} from "@/lib/prisma";
+import {getPrisma} from "@/lib/prisma";
 import {recomputeTournamentState} from "@/lib/tournament";
 import {z} from "zod";
 
@@ -12,6 +12,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/admin/fixtu
         return jsonError("Admin only.", 403);
     }
 
+    const prisma = getPrisma();
     const {id} = await ctx.params;
     const match = await prisma.match.findUnique({where: {id}});
     if (!match) {

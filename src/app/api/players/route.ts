@@ -2,13 +2,14 @@ import {z} from "zod";
 import {getClaimedPlayerId, isAdmin} from "@/lib/cookies";
 import {findDuplicateName, jsonError} from "@/lib/http";
 import {cleanNamePart, isValidNamePart, normalizeNamePart} from "@/lib/names";
-import {prisma} from "@/lib/prisma";
+import {getPrisma} from "@/lib/prisma";
 import {serializePlayer} from "@/lib/serialize";
 import {getSettings} from "@/lib/settings";
 
 const PAGE_SIZE = 20;
 
 export async function GET(request: Request) {
+    const prisma = getPrisma();
     const {searchParams} = new URL(request.url);
     const offset = Math.max(0, Number(searchParams.get("offset") ?? 0) || 0);
     const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") ?? PAGE_SIZE) || PAGE_SIZE));
@@ -40,6 +41,7 @@ const registerSchema = z.object({
 });
 
 export async function POST(request: Request) {
+    const prisma = getPrisma();
     const admin = await isAdmin();
     let body: unknown;
     try {
