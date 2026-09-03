@@ -147,7 +147,18 @@ export default function AdminPage() {
                     {match.status}
                 </span>
                                 <span className="flex gap-2">
-                                    {match.status !== "VOID" ? (
+                                    {match.status === "VOID" ? (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={async () => {
+                                                await readApi(`/api/matches/${match.id}/void`, {method: "DELETE"});
+                                                await load();
+                                            }}
+                                        >
+                                            Restore
+                                        </Button>
+                                    ) : (
                                         <Button
                                             size="sm"
                                             variant="danger"
@@ -158,7 +169,7 @@ export default function AdminPage() {
                                         >
                                             Void
                                         </Button>
-                                    ) : null}
+                                    )}
                 </span>
                             </li>
                         ))}
@@ -389,10 +400,10 @@ function FixtureDesk({
 }
 
 function FixtureResultForm({match, onSave}: { match: MatchView; onSave: () => Promise<void> }) {
-    const [g1a, setG1a] = useState("11");
-    const [g1b, setG1b] = useState("7");
-    const [g2a, setG2a] = useState("11");
-    const [g2b, setG2b] = useState("9");
+    const [g1a, setG1a] = useState("");
+    const [g1b, setG1b] = useState("");
+    const [g2a, setG2a] = useState("");
+    const [g2b, setG2b] = useState("");
     const [g3a, setG3a] = useState("");
     const [g3b, setG3b] = useState("");
     const [busy, setBusy] = useState(false);
@@ -423,21 +434,73 @@ function FixtureResultForm({match, onSave}: { match: MatchView; onSave: () => Pr
     }
 
     return (
-        <form onSubmit={submit} className="space-y-3 rounded-xl bg-paper p-4">
-            <p className="font-semibold">{match.round ? `Round ${match.round} · ` : ""}{match.playerA.name} vs {match.playerB.name}</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
-                <Input aria-label="Game 1 player A" value={g1a} onChange={(e) => setG1a(e.target.value)}/>
-                <Input aria-label="Game 1 player B" value={g1b} onChange={(e) => setG1b(e.target.value)}/>
-                <Input aria-label="Game 2 player A" value={g2a} onChange={(e) => setG2a(e.target.value)}/>
-                <Input aria-label="Game 2 player B" value={g2b} onChange={(e) => setG2b(e.target.value)}/>
-                <Input placeholder="G3 A" value={g3a} onChange={(e) => setG3a(e.target.value)}/>
-                <Input placeholder="G3 B" value={g3b} onChange={(e) => setG3b(e.target.value)}/>
+        <form onSubmit={submit} className="space-y-4 rounded-xl bg-paper p-4">
+            <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-court">
+                    {match.round ? `Round ${match.round}` : "Pending fixture"}
+                </p>
+                <p className="mt-1 font-semibold">{match.playerA.name} vs {match.playerB.name}</p>
             </div>
+            <div className="overflow-x-auto">
+                <table className="w-full min-w-md text-sm">
+                    <thead>
+                    <tr className="text-left text-xs text-ink/55">
+                        <th className="pb-2 font-medium">Player</th>
+                        <th className="px-1 pb-2 text-center font-medium">Game 1</th>
+                        <th className="px-1 pb-2 text-center font-medium">Game 2</th>
+                        <th className="px-1 pb-2 text-center font-medium">Game 3 (if needed)</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <ScoreRow
+                        name={match.playerA.name}
+                        values={[g1a, g2a, g3a]}
+                        onChange={[setG1a, setG2a, setG3a]}
+                    />
+                    <ScoreRow
+                        name={match.playerB.name}
+                        values={[g1b, g2b, g3b]}
+                        onChange={[setG1b, setG2b, setG3b]}
+                    />
+                    </tbody>
+                </table>
+            </div>
+            <p className="text-xs text-ink/50">Enter the final points for each game after the match is played.</p>
             {error ? <p className="text-sm text-red-700">{error}</p> : null}
             <Button type="submit" size="sm" disabled={busy}>
                 {busy ? "Saving…" : "Save result"}
             </Button>
         </form>
+    );
+}
+
+function ScoreRow({
+                      name,
+                      values,
+                      onChange,
+                  }: {
+    name: string;
+    values: string[];
+    onChange: ((value: string) => void)[];
+}) {
+    return (
+        <tr>
+            <th className="pr-3 py-1 text-left font-medium">{name}</th>
+            {values.map((value, index) => (
+                <td key={index} className="px-1 py-1">
+                    <Input
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        required={index < 2}
+                        aria-label={`${name}, game ${index + 1}`}
+                        placeholder="Points"
+                        value={value}
+                        onChange={(event) => onChange[index](event.target.value)}
+                    />
+                </td>
+            ))}
+        </tr>
     );
 }
 

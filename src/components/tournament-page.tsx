@@ -587,7 +587,7 @@ function SectionTitle({
 function playerStatusLabel(player: PlayerView) {
     if (player.withdrawnAt) return "Turnuvadan ayrıldı";
     if (player.eliminatedAt) return "Elendi";
-    return "Eşleşme Bekliyor";
+    return "Devam Ediyor";
 }
 
 function mergeById<T extends {id: string}>(current: T[], incoming: T[]) {

@@ -15,21 +15,42 @@ export async function GET(request: Request) {
     const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") ?? PAGE_SIZE) || PAGE_SIZE));
 
     const where = {registrationStatus: "APPROVED", withdrawnAt: null};
-    const [total, players] = await Promise.all([
-        prisma.player.count({where}),
-        prisma.player.findMany({
-            where,
-            orderBy: [{eliminatedAt: "asc"}, {lastName: "asc"}, {firstName: "asc"}],
-            skip: offset,
-            take: limit,
-        }),
-    ]);
+    const allPlayers = await prisma.player.findMany({where});
+    allPlayers.sort(compareTournamentPlayers);
+    const total = allPlayers.length;
+    const players = allPlayers.slice(offset, offset + limit);
 
     return Response.json({
         total,
         nextOffset: offset + players.length < total ? offset + players.length : null,
         items: players.map(serializePlayer),
     });
+}
+
+type RankedPlayer = {
+    firstName: string;
+    lastName: string;
+    wins: number;
+    losses: number;
+    eliminatedAt: Date | null;
+};
+
+function compareTournamentPlayers(a: RankedPlayer, b: RankedPlayer) {
+    const statusOrder = Number(Boolean(a.eliminatedAt)) - Number(Boolean(b.eliminatedAt));
+    if (statusOrder !== 0) return statusOrder;
+
+    const matchesA = a.wins + a.losses;
+    const matchesB = b.wins + b.losses;
+    const rateA = matchesA === 0 ? 0 : a.wins / matchesA;
+    const rateB = matchesB === 0 ? 0 : b.wins / matchesB;
+    if (rateA !== rateB) return rateB - rateA;
+    if (a.wins !== b.wins) return b.wins - a.wins;
+    if (a.losses !== b.losses) return a.losses - b.losses;
+
+    return `${a.lastName} ${a.firstName}`.localeCompare(
+        `${b.lastName} ${b.firstName}`,
+        "tr",
+    );
 }
 
 const registerSchema = z.object({
