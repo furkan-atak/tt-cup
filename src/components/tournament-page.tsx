@@ -28,14 +28,15 @@ export function TournamentPage() {
     const [settings, setSettings] = useState<SettingsView | null>(null);
     const [me, setMe] = useState<PlayerView | null>(null);
     const [rankings, setRankings] = useState<PlayerView[]>([]);
-    const [rankOffset, setRankOffset] = useState<number | null>(0);
+    const [rankOffset, setRankOffset] = useState<number | null>(null);
     const [matches, setMatches] = useState<MatchView[]>([]);
     const [fixtures, setFixtures] = useState<MatchView[]>([]);
-    const [matchOffset, setMatchOffset] = useState<number | null>(0);
+    const [matchOffset, setMatchOffset] = useState<number | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [registerOpen, setRegisterOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [selected, setSelected] = useState<PlayerView | null>(null);
+    const initialLoadStarted = useRef(false);
 
     const loadMe = useCallback(async () => {
         const data = await readApi<{ settings: SettingsView; me: PlayerView | null }>("/api/me");
@@ -45,13 +46,13 @@ export function TournamentPage() {
 
     const loadRankings = useCallback(async (offset: number, append: boolean) => {
         const data = await readApi<PageResponse<PlayerView>>(`/api/players?offset=${offset}&limit=20`);
-        setRankings((current) => (append ? [...current, ...data.items] : data.items));
+        setRankings((current) => (append ? mergeById(current, data.items) : data.items));
         setRankOffset(data.nextOffset);
     }, []);
 
     const loadMatches = useCallback(async (offset: number, append: boolean) => {
         const data = await readApi<PageResponse<MatchView>>(`/api/matches?offset=${offset}&limit=20`);
-        setMatches((current) => (append ? [...current, ...data.items] : data.items));
+        setMatches((current) => (append ? mergeById(current, data.items) : data.items));
         setMatchOffset(data.nextOffset);
     }, []);
 
@@ -66,6 +67,9 @@ export function TournamentPage() {
     }, [loadMe, loadRankings, loadMatches, loadFixtures]);
 
     useEffect(() => {
+        if (initialLoadStarted.current) return;
+        initialLoadStarted.current = true;
+
         async function loadInitialData() {
             try {
                 await refreshAll();
@@ -586,16 +590,27 @@ function playerStatusLabel(player: PlayerView) {
     return "Eşleşme Bekliyor";
 }
 
+function mergeById<T extends {id: string}>(current: T[], incoming: T[]) {
+    const items = new Map(current.map((item) => [item.id, item]));
+    for (const item of incoming) items.set(item.id, item);
+    return [...items.values()];
+}
+
 function useInfinite(nextOffset: number | null, load: (offset: number) => Promise<void>) {
     const ref = useRef<HTMLDivElement>(null);
+    const loadingOffset = useRef<number | null>(null);
     useEffect(() => {
         if (nextOffset === null) return;
         const node = ref.current;
         if (!node) return;
         const observer = new IntersectionObserver((entries) => {
-            if (entries[0]?.isIntersecting) {
-                load(nextOffset).catch(() => undefined);
-            }
+            if (!entries[0]?.isIntersecting || loadingOffset.current === nextOffset) return;
+            loadingOffset.current = nextOffset;
+            load(nextOffset)
+                .catch(() => undefined)
+                .finally(() => {
+                    if (loadingOffset.current === nextOffset) loadingOffset.current = null;
+                });
         });
         observer.observe(node);
         return () => observer.disconnect();

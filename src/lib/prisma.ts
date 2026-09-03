@@ -7,9 +7,16 @@ declare global {
     interface CloudflareEnv {
         DB: D1Database;
     }
+
+    var localPrisma: PrismaClient | undefined;
 }
 
 export function getPrisma() {
+    if (process.env.NODE_ENV === "development") {
+        globalThis.localPrisma ??= new PrismaClient();
+        return globalThis.localPrisma;
+    }
+
     const adapter = new PrismaD1(getCloudflareContext().env.DB);
     return new PrismaClient({adapter});
 }
