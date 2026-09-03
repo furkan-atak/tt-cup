@@ -2,7 +2,7 @@ import {isAdmin} from "@/lib/cookies";
 import {jsonError, parseGamePayload} from "@/lib/http";
 import {matchWinnerFromGames, validateBestOfThree} from "@/lib/match-rules";
 import {prisma} from "@/lib/prisma";
-import {recomputeRatings} from "@/lib/rating";
+import {recomputeTournamentState} from "@/lib/tournament";
 import {z} from "zod";
 
 const resultSchema = z.object({games: z.unknown()});
@@ -48,7 +48,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/admin/fixtu
             confirmedAt: new Date(),
         },
     });
-    await recomputeRatings();
+    await recomputeTournamentState();
 
     return Response.json({ok: true});
 }

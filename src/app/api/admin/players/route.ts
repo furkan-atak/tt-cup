@@ -9,7 +9,7 @@ export async function GET() {
     }
 
     const players = await prisma.player.findMany({
-        orderBy: [{withdrawnAt: "asc"}, {lastName: "asc"}, {firstName: "asc"}],
+        orderBy: [{withdrawnAt: "asc"}, {eliminatedAt: "asc"}, {lastName: "asc"}, {firstName: "asc"}],
     });
 
     return Response.json({items: players.map((player) => serializePlayer(player))});

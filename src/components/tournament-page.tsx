@@ -89,7 +89,7 @@ export function TournamentPage() {
                         {publicEventName(settings)}
                     </a>
                     <nav className="hidden items-center gap-5 text-sm font-medium sm:flex">
-                        <a href="#rankings" className="hover:text-ball">Sıralama</a>
+                        <a href="#rankings" className="hover:text-ball">Turnuva</a>
                         <a href="#matches" className="hover:text-ball">Fikstür</a>
                         <a href="#rules" className="hover:text-ball">Kurallar</a>
                     </nav>
@@ -151,8 +151,7 @@ export function TournamentPage() {
                             </div>
                             {!me.withdrawnAt ? (
                                 <p className="mt-2 text-sm text-ink/60">
-                                    Elo {me.elo} · {me.wins}G–{me.losses}M
-                                    {me.rank ? ` · ${me.rank}. sıra` : ""}
+                                    {playerStatusLabel(me)} · {me.wins} galibiyet · {me.losses} mağlubiyet
                                 </p>
                             ) : null}
                         </div>
@@ -162,18 +161,16 @@ export function TournamentPage() {
                 <section id="rankings" className="mx-auto max-w-5xl px-4 py-16">
                     <SectionTitle
                         icon={<Trophy className="h-5 w-5 text-ball"/>}
-                        title="Sıralama"
-                        subtitle="Kurada rakibini bul, maçını oyna, zirveye tırman."
+                        title="Turnuva Tablosu"
+                        subtitle="Kazananlar yoluna devam eder, kaybedenler turnuvaya veda eder."
                     />
                     <div className="mt-6 overflow-hidden rounded-2xl border border-ink/10 bg-white">
                         <table className="w-full text-left text-sm">
                             <thead className="bg-court text-white">
                             <tr>
-                                <th className="px-4 py-3 font-medium">#</th>
                                 <th className="px-4 py-3 font-medium">Oyuncu</th>
-                                <th className="px-4 py-3 font-medium">Elo</th>
+                                <th className="px-4 py-3 font-medium">Durum</th>
                                 <th className="hidden px-4 py-3 font-medium sm:table-cell">G–M</th>
-                                <th className="hidden px-4 py-3 font-medium sm:table-cell">Seri</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -183,7 +180,6 @@ export function TournamentPage() {
                                     className="cursor-pointer border-t border-ink/5 hover:bg-paper"
                                     onClick={() => setSelected(player)}
                                 >
-                                    <td className="px-4 py-3 font-display text-lg">{player.rank}</td>
                                     <td className="px-4 py-3">
                                         <div className="font-semibold">
                                             {player.name}
@@ -192,18 +188,19 @@ export function TournamentPage() {
                                             ) : null}
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 font-semibold">{player.elo}</td>
+                                    <td className="px-4 py-3 font-semibold text-court">
+                                        {playerStatusLabel(player)}
+                                    </td>
                                     <td className="hidden px-4 py-3 sm:table-cell">
                                         {player.wins}–{player.losses}
                                     </td>
-                                    <td className="hidden px-4 py-3 sm:table-cell">{streakLabel(player.streak)}</td>
                                 </tr>
                             ))}
                             </tbody>
                         </table>
                         {rankings.length === 0 ? (
                             <p className="px-4 py-10 text-center text-ink/50">
-                                Masa hazır, ilk raketini bekliyor. Sen de hikâyeye katıl!
+                                Turnuva listesi ilk oyuncularını bekliyor. Sen de mücadeleye katıl!
                             </p>
                         ) : null}
                         <div ref={rankSentinel} className="h-8"/>
@@ -216,10 +213,11 @@ export function TournamentPage() {
                         {fixtures.map((match) => (
                             <article key={match.id} className="rounded-2xl border border-court/20 bg-white px-4 py-4">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-court">Sıradaki maç</p>
-                                <p className="mt-1 font-semibold">
-                                    {match.playerA.name} <span
-                                    className="mx-2 text-ink/30">-</span> {match.playerB.name}
-                                </p>
+                                    <p className="mt-1 font-semibold">
+                                        {match.playerA.name} <span
+                                        className="mx-2 text-ink/30">-</span> {match.playerB.name}
+                                    </p>
+                                    {match.round ? <p className="mt-1 text-xs text-ink/45">{match.round}. tur</p> : null}
                             </article>
                         ))}
                         {fixtures.length === 0 ? (
@@ -254,6 +252,7 @@ export function TournamentPage() {
                       Kazanan: {match.winnerId === match.playerA.id ? match.playerA.name : match.playerB.name}
                     </span>
                                     ) : null}
+                                    {match.round ? <span className="ml-2 text-ink/45">· {match.round}. tur</span> : null}
                                 </p>
                             </article>
                         ))}
@@ -559,10 +558,10 @@ function SectionTitle({
     );
 }
 
-function streakLabel(streak: number) {
-    if (streak > 0) return `G${streak}`;
-    if (streak < 0) return `M${Math.abs(streak)}`;
-    return "—";
+function playerStatusLabel(player: PlayerView) {
+    if (player.withdrawnAt) return "Turnuvadan ayrıldı";
+    if (player.eliminatedAt) return "Elendi";
+    return "Turnuvada";
 }
 
 function useInfinite(nextOffset: number | null, load: (offset: number) => Promise<void>) {
@@ -720,14 +719,12 @@ function PlayerDialog({
     onEdit: () => void;
 }) {
     const [detail, setDetail] = useState<{
-        ratingHistory: { eloAfter: number }[];
         recentMatches: MatchView[];
     } | null>(null);
 
     useEffect(() => {
         if (!player) return;
         readApi<{
-            ratingHistory: { eloAfter: number }[];
             recentMatches: MatchView[];
         }>(`/api/players/${player.id}`)
             .then(setDetail)
@@ -739,12 +736,10 @@ function PlayerDialog({
             {player ? (
                 <DialogContent title={player.name} description="Oyuncu profili">
                     <p className="text-sm text-ink/70">
-                        Elo {player.elo} · {player.wins}G–{player.losses}M · {streakLabel(player.streak)}
+                        {playerStatusLabel(player)} · {player.wins} galibiyet · {player.losses} mağlubiyet
                     </p>
-                    {detail?.ratingHistory.length ? (
-                        <p className="mt-3 text-xs text-ink/50">
-                            Elo yolculuğu: {detail.ratingHistory.map((event) => event.eloAfter).join(" → ")}
-                        </p>
+                    {detail?.recentMatches.length ? (
+                        <p className="mt-3 text-xs text-ink/50">{detail.recentMatches.length} maç oynadı.</p>
                     ) : (
                         <p className="mt-3 text-xs text-ink/50">Henüz onaylanmış bir maçı yok.</p>
                     )}

@@ -14,7 +14,7 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
     title: "Office Table Tennis Cup",
-    description: "Register, play best of 3, and follow the live ranking.",
+    description: "Register, play best of 3, and follow the elimination tournament.",
 };
 
 export default function RootLayout({children}: LayoutProps<"/">) {

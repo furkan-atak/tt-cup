@@ -18,6 +18,7 @@ export async function GET() {
         items: items.map((match) => ({
             id: match.id,
             status: match.status,
+            round: match.round,
             games: parseGames(match.gamesJson),
             winnerId: match.winnerId,
             confirmedAt: match.confirmedAt,

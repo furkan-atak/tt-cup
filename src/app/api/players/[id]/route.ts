@@ -23,13 +23,7 @@ export async function GET(
         return jsonError("Player not found.", 404);
     }
 
-    const [ratingEvents, matches] = await Promise.all([
-        prisma.ratingEvent.findMany({
-            where: {playerId: id},
-            orderBy: {match: {confirmedAt: "asc"}},
-            include: {match: true},
-        }),
-        prisma.match.findMany({
+    const matches = await prisma.match.findMany({
             where: {
                 status: "CONFIRMED",
                 OR: [{playerAId: id}, {playerBId: id}],
@@ -37,21 +31,16 @@ export async function GET(
             orderBy: {confirmedAt: "desc"},
             take: 20,
             include: {playerA: true, playerB: true, winner: true},
-        }),
-    ]);
+        });
 
     return Response.json({
         player: serializePlayer(player),
-        ratingHistory: ratingEvents.map((event) => ({
-            matchId: event.matchId,
-            eloBefore: event.eloBefore,
-            eloAfter: event.eloAfter,
-        })),
         recentMatches: matches.map((match) => ({
             id: match.id,
             playerA: serializePlayer(match.playerA),
             playerB: serializePlayer(match.playerB),
             winnerId: match.winnerId,
+            round: match.round,
             gamesJson: match.gamesJson,
             confirmedAt: match.confirmedAt,
         })),

@@ -14,11 +14,10 @@ model Player {
   firstNameNorm String
   lastNameNorm  String
   department    String?
-  elo           Int       @default(1000)
   wins          Int       @default(0)
   losses        Int       @default(0)
-  streak        Int       @default(0)
   withdrawnAt   DateTime?
+  eliminatedAt  DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -26,7 +25,6 @@ model Player {
   matchesB        Match[]       @relation("PlayerB")
   reportedMatches Match[]       @relation("ReportedBy")
   wonMatches      Match[]       @relation("Winner")
-  ratingEvents    RatingEvent[]
 
   @@unique([firstNameNorm, lastNameNorm])
 }
@@ -38,6 +36,7 @@ model Match {
   reportedByPlayerId String?
   winnerId           String?
   status             String    @default("PENDING")
+  round              Int?
   gamesJson          String
   playedAt           DateTime  @default(now())
   confirmedAt        DateTime?
@@ -47,18 +46,6 @@ model Match {
   playerB      Player        @relation("PlayerB", fields: [playerBId], references: [id])
   reportedBy   Player?       @relation("ReportedBy", fields: [reportedByPlayerId], references: [id])
   winner       Player?       @relation("Winner", fields: [winnerId], references: [id])
-  ratingEvents RatingEvent[]
-}
-
-model RatingEvent {
-  id        String @id @default(cuid())
-  matchId   String
-  playerId  String
-  eloBefore Int
-  eloAfter  Int
-
-  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  player Player @relation(fields: [playerId], references: [id])
 }
 
 model Settings {

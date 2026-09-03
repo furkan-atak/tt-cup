@@ -1,6 +1,6 @@
 # Office Table Tennis Cup
 
-Single-page company tournament: people add their first and last name, play **best of 3**, and a live Elo ranking updates when results are confirmed.
+Single-page company elimination tournament: people register, play **best of 3**, and winners advance to the next round.
 
 This is a **Next.js** app (the page **and** a small API) with a **SQLite** file on disk. It is not frontend-only, and it is not part of Pasaj.
 
@@ -28,7 +28,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## How it works
 
 - **Players:** first name + last name. No email, no login. The browser that registered can edit or remove **only that listing**.
-- **Matches:** best of 3, games to 11, win by 2 from 10–10. Opponent confirms; then Elo updates.
+- **Matches:** single elimination, best of 3, games to 11, win by 2 from 10–10. The tournament administrator records results and advances winners.
 - **Admin:** not linked from the public page. Open `/admin/login` if you know the URL.
 
 ## Scripts

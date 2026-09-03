@@ -1,7 +1,7 @@
 import {isAdmin} from "@/lib/cookies";
 import {jsonError} from "@/lib/http";
 import {prisma} from "@/lib/prisma";
-import {recomputeRatings} from "@/lib/rating";
+import {recomputeTournamentState} from "@/lib/tournament";
 
 export async function POST(
     _request: Request,
@@ -16,12 +16,18 @@ export async function POST(
     if (!match) {
         return jsonError("Match not found.", 404);
     }
+    if (match.round) {
+        const laterRoundExists = await prisma.match.count({where: {round: {gt: match.round}}});
+        if (laterRoundExists > 0) {
+            return jsonError("A match cannot be voided after the next round has been drawn.", 409);
+        }
+    }
 
     await prisma.match.update({
         where: {id},
         data: {status: "VOID", confirmedAt: null, winnerId: null},
     });
-    await recomputeRatings();
+    await recomputeTournamentState();
 
     return Response.json({ok: true});
 }

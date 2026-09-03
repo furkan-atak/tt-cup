@@ -79,7 +79,7 @@ export default function AdminPage() {
                             <thead className="bg-court text-white">
                             <tr>
                                 <th className="px-3 py-2">Name</th>
-                                <th className="px-3 py-2">Elo</th>
+                                <th className="px-3 py-2">Record</th>
                                 <th className="px-3 py-2">Status</th>
                                 <th className="px-3 py-2"/>
                             </tr>
@@ -88,8 +88,8 @@ export default function AdminPage() {
                             {players.map((player) => (
                                 <tr key={player.id} className="border-t border-ink/5">
                                     <td className="px-3 py-2">{player.name}</td>
-                                    <td className="px-3 py-2">{player.elo}</td>
-                                    <td className="px-3 py-2">{player.withdrawnAt ? "Withdrawn" : "Active"}</td>
+                                    <td className="px-3 py-2">{player.wins}–{player.losses}</td>
+                                    <td className="px-3 py-2">{player.withdrawnAt ? "Withdrawn" : player.eliminatedAt ? "Eliminated" : "Active"}</td>
                                     <td className="px-3 py-2 text-right">
                                         <Button
                                             size="sm"
@@ -121,21 +121,10 @@ export default function AdminPage() {
                                 className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm"
                             >
                 <span>
-                  {match.playerA.name} vs {match.playerB.name} · {gamesLabel(match.games)} ·{" "}
+                  {match.round ? `Round ${match.round} · ` : ""}{match.playerA.name} vs {match.playerB.name} · {gamesLabel(match.games)} ·{" "}
                     {match.status}
                 </span>
                                 <span className="flex gap-2">
-                  {match.status === "PENDING" ? (
-                      <Button
-                          size="sm"
-                          onClick={async () => {
-                              await readApi(`/api/matches/${match.id}/confirm`, {method: "POST"});
-                              await load();
-                          }}
-                      >
-                          Confirm
-                      </Button>
-                  ) : null}
                                     {match.status !== "VOID" ? (
                                         <Button
                                             size="sm"
@@ -264,10 +253,10 @@ function FixtureDesk({
         setBusy(true);
         setMessage(null);
         try {
-            const result = await readApi<{ created: number; byePlayerId: string | null }>("/api/admin/fixtures", {
+            const result = await readApi<{ created: number; round: number; byePlayerId: string | null }>("/api/admin/fixtures", {
                 method: "POST",
             });
-            setMessage(`${result.created} fixture${result.created === 1 ? "" : "s"} drawn.`);
+            setMessage(`Round ${result.round}: ${result.created} fixture${result.created === 1 ? "" : "s"} drawn.`);
             await onSave();
         } catch (err) {
             setMessage(err instanceof Error ? err.message : "Could not draw fixtures.");
@@ -281,7 +270,7 @@ function FixtureDesk({
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 className="font-display text-2xl">Fixture draw</h2>
-                    <p className="text-sm text-ink/55">Randomly pair all active players.</p>
+                    <p className="text-sm text-ink/55">Pair the players still in the tournament.</p>
                 </div>
                 <Button type="button" size="sm" onClick={drawFixtures} disabled={busy || fixtures.length > 0}>
                     {busy ? "Drawing…" : "Draw fixtures"}
@@ -339,7 +328,7 @@ function FixtureResultForm({match, onSave}: { match: MatchView; onSave: () => Pr
 
     return (
         <form onSubmit={submit} className="space-y-3 rounded-xl bg-paper p-4">
-            <p className="font-semibold">{match.playerA.name} vs {match.playerB.name}</p>
+            <p className="font-semibold">{match.round ? `Round ${match.round} · ` : ""}{match.playerA.name} vs {match.playerB.name}</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
                 <Input aria-label="Game 1 player A" value={g1a} onChange={(e) => setG1a(e.target.value)}/>
                 <Input aria-label="Game 1 player B" value={g1b} onChange={(e) => setG1b(e.target.value)}/>

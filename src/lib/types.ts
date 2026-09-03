@@ -4,18 +4,17 @@ export type PlayerView = {
     lastName: string;
     name: string;
     department: string | null;
-    elo: number;
     wins: number;
     losses: number;
-    streak: number;
     matchesPlayed: number;
     withdrawnAt: string | Date | null;
-    rank: number | null;
+    eliminatedAt: string | Date | null;
 };
 
 export type MatchView = {
     id: string;
     status: string;
+    round: number | null;
     games: { a: number; b: number }[];
     winnerId: string | null;
     confirmedAt: string | Date | null;

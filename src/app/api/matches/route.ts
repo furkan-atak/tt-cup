@@ -1,20 +1,13 @@
-import {isAdmin} from "@/lib/cookies";
-import {jsonError, parseGamePayload} from "@/lib/http";
-import {
-    matchWinnerFromGames,
-    parseGames,
-    validateBestOfThree,
-} from "@/lib/match-rules";
+import {parseGames} from "@/lib/match-rules";
 import {prisma} from "@/lib/prisma";
-import {recomputeRatings} from "@/lib/rating";
 import {serializePlayer} from "@/lib/serialize";
-import {z} from "zod";
 
 const PAGE_SIZE = 20;
 
 function serializeMatch(match: {
     id: string;
     status: string;
+    round: number | null;
     gamesJson: string;
     winnerId: string | null;
     confirmedAt: Date | null;
@@ -26,6 +19,7 @@ function serializeMatch(match: {
     return {
         id: match.id,
         status: match.status,
+        round: match.round,
         games: parseGames(match.gamesJson),
         winnerId: match.winnerId,
         confirmedAt: match.confirmedAt,
@@ -68,79 +62,4 @@ export async function GET(request: Request) {
         nextOffset: offset + items.length < total ? offset + items.length : null,
         items: items.map(serializeMatch),
     });
-}
-
-const reportSchema = z.object({
-    opponentId: z.string().min(1),
-    games: z.unknown(),
-});
-
-export async function POST(request: Request) {
-    if (!(await isAdmin())) {
-        return jsonError("Admin only.", 403);
-    }
-
-    let body: unknown;
-    try {
-        body = await request.json();
-    } catch {
-        return jsonError("Invalid JSON.");
-    }
-
-    const parsed = reportSchema.safeParse(body);
-    if (!parsed.success) {
-        return jsonError("Opponent and game scores are required.");
-    }
-
-    const games = parseGamePayload(parsed.data.games);
-    if (!games) {
-        return jsonError("Game scores are invalid.");
-    }
-    const gamesError = validateBestOfThree(games);
-    if (gamesError) {
-        return jsonError(gamesError);
-    }
-
-    const winnerSide = matchWinnerFromGames(games);
-    let playerAId: string | null = null;
-    let playerBId = parsed.data.opponentId;
-    if (typeof (body as { playerAId?: string }).playerAId === "string") {
-        const adminBody = body as { playerAId: string; playerBId?: string };
-        playerAId = adminBody.playerAId;
-        playerBId = adminBody.playerBId ?? parsed.data.opponentId;
-    }
-
-    if (!playerAId || !playerBId) {
-        return jsonError("Both players are required.");
-    }
-    if (playerAId === playerBId) {
-        return jsonError("You cannot play yourself.");
-    }
-
-    const [playerA, playerB] = await Promise.all([
-        prisma.player.findUnique({where: {id: playerAId}}),
-        prisma.player.findUnique({where: {id: playerBId}}),
-    ]);
-    if (!playerA || !playerB || playerA.withdrawnAt || playerB.withdrawnAt) {
-        return jsonError("Both players must be on the active list.");
-    }
-
-    const winnerId = winnerSide === "a" ? playerAId : playerBId;
-
-    const match = await prisma.match.create({
-        data: {
-            playerAId,
-            playerBId,
-            reportedByPlayerId: null,
-            winnerId,
-            status: "CONFIRMED",
-            gamesJson: JSON.stringify(games),
-            confirmedAt: new Date(),
-        },
-        include: {playerA: true, playerB: true},
-    });
-
-    await recomputeRatings();
-
-    return Response.json({match: serializeMatch(match)}, {status: 201});
 }

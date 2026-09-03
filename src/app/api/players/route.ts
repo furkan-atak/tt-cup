@@ -3,7 +3,7 @@ import {getClaimedPlayerId, isAdmin, setPlayerClaim} from "@/lib/cookies";
 import {findDuplicateName, jsonError} from "@/lib/http";
 import {cleanNamePart, isValidNamePart, normalizeNamePart} from "@/lib/names";
 import {prisma} from "@/lib/prisma";
-import {rankingOrder, serializePlayer} from "@/lib/serialize";
+import {serializePlayer} from "@/lib/serialize";
 import {getSettings} from "@/lib/settings";
 
 const PAGE_SIZE = 20;
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
         prisma.player.count({where}),
         prisma.player.findMany({
             where,
-            orderBy: rankingOrder,
+            orderBy: [{eliminatedAt: "asc"}, {lastName: "asc"}, {firstName: "asc"}],
             skip: offset,
             take: limit,
         }),
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     return Response.json({
         total,
         nextOffset: offset + players.length < total ? offset + players.length : null,
-        items: players.map((player, index) => serializePlayer(player, offset + index + 1)),
+        items: players.map(serializePlayer),
     });
 }
 
