@@ -9,13 +9,10 @@ export function isValidGame(a: number, b: number): boolean {
     }
     const high = Math.max(a, b);
     const low = Math.min(a, b);
-    if (high < 11 || high - low !== 2) {
-        return false;
-    }
     if (high === 11) {
         return low <= 9;
     }
-    return low >= 10;
+    return high > 11 && low >= 10 && high - low === 2;
 }
 
 export function gameWinner(game: GameScore): "a" | "b" | null {
