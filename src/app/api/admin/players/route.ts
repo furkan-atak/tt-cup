@@ -9,6 +9,7 @@ export async function GET() {
     }
 
     const players = await prisma.player.findMany({
+        where: {registrationStatus: "APPROVED"},
         orderBy: [{withdrawnAt: "asc"}, {eliminatedAt: "asc"}, {lastName: "asc"}, {firstName: "asc"}],
     });
 

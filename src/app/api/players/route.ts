@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {getClaimedPlayerId, isAdmin, setPlayerClaim} from "@/lib/cookies";
+import {getClaimedPlayerId, isAdmin} from "@/lib/cookies";
 import {findDuplicateName, jsonError} from "@/lib/http";
 import {cleanNamePart, isValidNamePart, normalizeNamePart} from "@/lib/names";
 import {prisma} from "@/lib/prisma";
@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const offset = Math.max(0, Number(searchParams.get("offset") ?? 0) || 0);
     const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") ?? PAGE_SIZE) || PAGE_SIZE));
 
-    const where = {withdrawnAt: null};
+    const where = {registrationStatus: "APPROVED", withdrawnAt: null};
     const [total, players] = await Promise.all([
         prisma.player.count({where}),
         prisma.player.findMany({
@@ -36,15 +36,11 @@ const registerSchema = z.object({
     lastName: z.string(),
     department: z.string().optional(),
     joinCode: z.string().optional(),
+    approveImmediately: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
     const admin = await isAdmin();
-    const settings = await getSettings();
-    if (!settings.registrationOpen && !admin) {
-        return jsonError("Registration is closed.", 403);
-    }
-
     let body: unknown;
     try {
         body = await request.json();
@@ -57,16 +53,25 @@ export async function POST(request: Request) {
         return jsonError("First name and last name are required.");
     }
 
+    const approveImmediately = parsed.data.approveImmediately === true && admin;
+    const settings = await getSettings();
+    if (!settings.registrationOpen && !approveImmediately) {
+        return jsonError("Registration is closed.", 403);
+    }
+
     const firstName = cleanNamePart(parsed.data.firstName);
     const lastName = cleanNamePart(parsed.data.lastName);
     if (!isValidNamePart(firstName) || !isValidNamePart(lastName)) {
         return jsonError("Enter a first and last name (2–40 characters each).");
     }
 
-    const claimedId = admin ? null : await getClaimedPlayerId();
+    const claimedId = approveImmediately ? null : await getClaimedPlayerId();
     if (claimedId) {
         const existingMe = await prisma.player.findUnique({where: {id: claimedId}});
-        if (existingMe && !existingMe.withdrawnAt) {
+        if (existingMe?.registrationStatus === "PENDING") {
+            return jsonError("This browser already has a registration awaiting review.", 409);
+        }
+        if (existingMe?.registrationStatus === "APPROVED" && !existingMe.withdrawnAt) {
             return jsonError("This browser is already listed. Edit your name instead.", 409);
         }
     }
@@ -86,11 +91,12 @@ export async function POST(request: Request) {
             firstNameNorm,
             lastNameNorm,
             department,
+            registrationStatus: approveImmediately ? "APPROVED" : "PENDING",
         },
     });
 
-    if (!admin) {
-        await setPlayerClaim(player.id);
+    if (!approveImmediately) {
+        return Response.json({message: "Registration request received."}, {status: 202});
     }
     return Response.json({player: serializePlayer(player)}, {status: 201});
 }

@@ -6,7 +6,7 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {gamesLabel} from "@/lib/match-rules";
-import type {MatchView, PlayerView, SettingsView} from "@/lib/types";
+import type {MatchView, PlayerView, RegistrationRequestView, SettingsView} from "@/lib/types";
 import {readApi} from "@/lib/types";
 
 export default function AdminPage() {
@@ -14,6 +14,7 @@ export default function AdminPage() {
     const [ready, setReady] = useState(false);
     const [settings, setSettings] = useState<SettingsView | null>(null);
     const [players, setPlayers] = useState<PlayerView[]>([]);
+    const [registrations, setRegistrations] = useState<RegistrationRequestView[]>([]);
     const [matches, setMatches] = useState<MatchView[]>([]);
     const [error, setError] = useState<string | null>(null);
 
@@ -23,13 +24,15 @@ export default function AdminPage() {
             router.replace("/admin/login");
             return;
         }
-        const [settingsData, playerData, matchData] = await Promise.all([
+        const [settingsData, playerData, registrationData, matchData] = await Promise.all([
             readApi<SettingsView>("/api/settings"),
             readApi<{ items: PlayerView[] }>("/api/admin/players"),
+            readApi<{ items: RegistrationRequestView[] }>("/api/admin/registrations"),
             readApi<{ items: MatchView[] }>("/api/admin/matches"),
         ]);
         setSettings({...settingsData, joinCodeRequired: false});
         setPlayers(playerData.items);
+        setRegistrations(registrationData.items);
         setMatches(matchData.items);
         setReady(true);
     }, [router]);
@@ -69,6 +72,7 @@ export default function AdminPage() {
                 {error ? <p className="text-sm text-red-700">{error}</p> : null}
 
                 <SettingsForm settings={settings} onSave={load}/>
+                <RegistrationReview requests={registrations} onSave={load}/>
                 <AddPlayerForm onSave={load}/>
                 <FixtureDesk matches={matches} onSave={load}/>
 
@@ -103,6 +107,24 @@ export default function AdminPage() {
                                             }}
                                         >
                                             {player.withdrawnAt ? "Restore" : "Withdraw"}
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="danger"
+                                            onClick={async () => {
+                                                if (!confirm(`Permanently delete ${player.name} and all of their matches? This cannot be undone.`)) {
+                                                    return;
+                                                }
+                                                try {
+                                                    setError(null);
+                                                    await readApi(`/api/admin/players/${player.id}`, {method: "DELETE"});
+                                                    await load();
+                                                } catch (err) {
+                                                    setError(err instanceof Error ? err.message : "Could not delete player.");
+                                                }
+                                            }}
+                                        >
+                                            Delete permanently
                                         </Button>
                                     </td>
                                 </tr>
@@ -144,6 +166,79 @@ export default function AdminPage() {
                 </section>
             </div>
         </div>
+    );
+}
+
+function RegistrationReview({
+                                requests,
+                                onSave,
+                            }: {
+    requests: RegistrationRequestView[];
+    onSave: () => Promise<void>;
+}) {
+    const [busyId, setBusyId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    async function review(id: string, decision: "APPROVED" | "REJECTED") {
+        setBusyId(id);
+        setError(null);
+        try {
+            await readApi(`/api/admin/registrations/${id}`, {
+                method: "PATCH",
+                body: JSON.stringify({decision}),
+            });
+            await onSave();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not review registration.");
+        } finally {
+            setBusyId(null);
+        }
+    }
+
+    return (
+        <section className="space-y-3 rounded-2xl border border-ball/20 bg-white p-5">
+            <div>
+                <h2 className="font-display text-2xl">Registration requests</h2>
+                <p className="text-sm text-ink/55">Approve coworkers before they appear in the tournament.</p>
+            </div>
+            {error ? <p className="text-sm text-red-700">{error}</p> : null}
+            {requests.length ? (
+                <ul className="divide-y divide-ink/10 overflow-hidden rounded-xl border border-ink/10">
+                    {requests.map((request) => (
+                        <li key={request.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                            <div>
+                                <p className="font-semibold">{request.name}</p>
+                                <p className="text-xs text-ink/50">
+                                    {new Date(request.createdAt).toLocaleString()}
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={busyId === request.id}
+                                    onClick={() => review(request.id, "REJECTED")}
+                                >
+                                    Reject
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="court"
+                                    disabled={busyId === request.id}
+                                    onClick={() => review(request.id, "APPROVED")}
+                                >
+                                    Approve
+                                </Button>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p className="rounded-xl border border-dashed border-ink/15 px-3 py-6 text-center text-sm text-ink/50">
+                    No registrations are waiting for review.
+                </p>
+            )}
+        </section>
     );
 }
 
@@ -208,28 +303,25 @@ function SettingsForm({
 function AddPlayerForm({onSave}: { onSave: () => Promise<void> }) {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
-    const [department, setDepartment] = useState("");
 
     async function submit(event: FormEvent) {
         event.preventDefault();
         await readApi("/api/players", {
             method: "POST",
-            body: JSON.stringify({firstName, lastName, department}),
+            body: JSON.stringify({firstName, lastName, approveImmediately: true}),
         });
         setFirstName("");
         setLastName("");
-        setDepartment("");
         await onSave();
     }
 
     return (
         <form onSubmit={submit} className="space-y-3 rounded-2xl border border-ink/10 bg-white p-5">
             <h2 className="font-display text-2xl">Add player</h2>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
                 <Input placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)}
                        required/>
                 <Input placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} required/>
-                <Input placeholder="Department" value={department} onChange={(e) => setDepartment(e.target.value)}/>
             </div>
             <Button type="submit" size="sm">
                 Add
@@ -253,7 +345,11 @@ function FixtureDesk({
         setBusy(true);
         setMessage(null);
         try {
-            const result = await readApi<{ created: number; round: number; byePlayerId: string | null }>("/api/admin/fixtures", {
+            const result = await readApi<{
+                created: number;
+                round: number;
+                byePlayerId: string | null
+            }>("/api/admin/fixtures", {
                 method: "POST",
             });
             setMessage(`Round ${result.round}: ${result.created} fixture${result.created === 1 ? "" : "s"} drawn.`);

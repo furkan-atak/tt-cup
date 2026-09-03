@@ -11,6 +11,15 @@ export type PlayerView = {
     eliminatedAt: string | Date | null;
 };
 
+export type RegistrationRequestView = {
+    id: string;
+    firstName: string;
+    lastName: string;
+    name: string;
+    department: string | null;
+    createdAt: string | Date;
+};
+
 export type MatchView = {
     id: string;
     status: string;

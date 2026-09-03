@@ -213,11 +213,11 @@ export function TournamentPage() {
                         {fixtures.map((match) => (
                             <article key={match.id} className="rounded-2xl border border-court/20 bg-white px-4 py-4">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-court">Sıradaki maç</p>
-                                    <p className="mt-1 font-semibold">
-                                        {match.playerA.name} <span
-                                        className="mx-2 text-ink/30">-</span> {match.playerB.name}
-                                    </p>
-                                    {match.round ? <p className="mt-1 text-xs text-ink/45">{match.round}. tur</p> : null}
+                                <p className="mt-1 font-semibold">
+                                    {match.playerA.name} <span
+                                    className="mx-2 text-ink/30">-</span> {match.playerB.name}
+                                </p>
+                                {match.round ? <p className="mt-1 text-xs text-ink/45">{match.round}. tur</p> : null}
                             </article>
                         ))}
                         {fixtures.length === 0 ? (
@@ -252,7 +252,8 @@ export function TournamentPage() {
                       Kazanan: {match.winnerId === match.playerA.id ? match.playerA.name : match.playerB.name}
                     </span>
                                     ) : null}
-                                    {match.round ? <span className="ml-2 text-ink/45">· {match.round}. tur</span> : null}
+                                    {match.round ?
+                                        <span className="ml-2 text-ink/45">· {match.round}. tur</span> : null}
                                 </p>
                             </article>
                         ))}
@@ -275,7 +276,6 @@ export function TournamentPage() {
             <RegisterDialog
                 open={registerOpen}
                 onOpenChange={setRegisterOpen}
-                onDone={refreshAll}
             />
             <EditDialog
                 key={`${me?.id ?? "none"}-${editOpen}`}
@@ -299,11 +299,11 @@ export function TournamentPage() {
 }
 
 function Hero({
-                   settings,
-                   onJoin,
-                   onManage,
-                   listed,
-               }: {
+                  settings,
+                  onJoin,
+                  onManage,
+                  listed,
+              }: {
     settings: SettingsView | null;
     onJoin: () => void;
     onManage: () => void;
@@ -321,7 +321,8 @@ function Hero({
                 <div className="absolute top-0 left-0 h-full w-24 border-r-2 border-white/40"/>
                 <div className="absolute top-0 right-0 h-full w-24 border-l-2 border-white/40"/>
             </div>
-            <div className="relative mx-auto grid max-w-5xl items-center gap-10 px-4 py-16 sm:py-24 md:grid-cols-[minmax(0,1fr)_22rem]">
+            <div
+                className="relative mx-auto grid max-w-5xl items-center gap-10 px-4 py-16 sm:py-24 md:grid-cols-[minmax(0,1fr)_22rem]">
                 <div className="relative z-10">
                     <p className="text-sm font-semibold tracking-[0.2em] text-ball uppercase">Ofis ligi</p>
                     <h1 className="mt-3 max-w-xl font-display text-5xl leading-none sm:text-6xl">
@@ -378,18 +379,21 @@ function TournamentCountdown() {
             {remaining?.started ? (
                 <p className="mt-2 font-display text-2xl text-ball">Turnuva başladı!</p>
             ) : (
-                <div className="mt-2 flex gap-2" aria-label={remaining ? countdownLabel(remaining) : "Geri sayım yükleniyor"}>
+                <div className="mt-2 flex gap-2"
+                     aria-label={remaining ? countdownLabel(remaining) : "Geri sayım yükleniyor"}>
                     {[
                         [remaining?.days, "Gün"],
                         [remaining?.hours, "Saat"],
                         [remaining?.minutes, "Dakika"],
                         [remaining?.seconds, "Saniye"],
                     ].map(([value, label]) => (
-                        <div key={label} className="min-w-14 rounded-lg border border-white/15 bg-black/10 px-2 py-2 text-center backdrop-blur-sm">
+                        <div key={label}
+                             className="min-w-14 rounded-lg border border-white/15 bg-black/10 px-2 py-2 text-center backdrop-blur-sm">
                             <span className="block font-display text-2xl leading-none tabular-nums text-white">
                                 {value === undefined ? "--" : String(value).padStart(2, "0")}
                             </span>
-                            <span className="mt-1 block text-[9px] font-semibold tracking-wider text-white/50 uppercase">
+                            <span
+                                className="mt-1 block text-[9px] font-semibold tracking-wider text-white/50 uppercase">
                                 {label}
                             </span>
                         </div>
@@ -446,7 +450,10 @@ function TableTennisAnimation() {
                     </filter>
                     <filter id="ball-glow" x="-200%" y="-200%" width="500%" height="500%">
                         <feGaussianBlur stdDeviation="4" result="blur"/>
-                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        <feMerge>
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
                     </filter>
                     <clipPath id="net-clip">
                         <path d="M168 125 L192 176 L192 202 L168 143 Z"/>
@@ -459,7 +466,8 @@ function TableTennisAnimation() {
                     <path d="M18 204 L342 204 L326 220 L34 220 Z" fill="url(#table-edge)"/>
                     <path d="M55 216 L70 216 L62 255 L50 255 Z" fill="#08261f"/>
                     <path d="M290 216 L305 216 L310 255 L298 255 Z" fill="#08261f"/>
-                    <path d="M18 202 L49 143 L311 143 L342 202 Z" fill="url(#table-top)" stroke="white" strokeOpacity=".85" strokeWidth="2"/>
+                    <path d="M18 202 L49 143 L311 143 L342 202 Z" fill="url(#table-top)" stroke="white"
+                          strokeOpacity=".85" strokeWidth="2"/>
                     <path d="M49 172 L326 172" stroke="white" strokeOpacity=".5" strokeWidth="1.3"/>
                     <path d="M180 143 L180 202" stroke="white" strokeOpacity=".2"/>
                     <path d="M49 143 L18 202 M311 143 L342 202" stroke="white" strokeOpacity=".2"/>
@@ -468,42 +476,56 @@ function TableTennisAnimation() {
                 <g className="table-tennis-net">
                     <path d="M168 125 L192 176 L192 202 L168 143 Z" fill="#061d18" fillOpacity=".56"/>
                     <g clipPath="url(#net-clip)" fill="none" stroke="#f8f1df" strokeOpacity=".56" strokeWidth=".55">
-                        <path d="M171 121 L171 207 M175 121 L175 207 M179 121 L179 207 M183 121 L183 207 M187 121 L187 207 M191 121 L191 207"/>
-                        <path d="M162 130 L198 130 M162 136 L198 136 M162 142 L198 142 M162 148 L198 148 M162 154 L198 154 M162 160 L198 160 M162 166 L198 166 M162 172 L198 172 M162 178 L198 178 M162 184 L198 184 M162 190 L198 190 M162 196 L198 196"/>
+                        <path
+                            d="M171 121 L171 207 M175 121 L175 207 M179 121 L179 207 M183 121 L183 207 M187 121 L187 207 M191 121 L191 207"/>
+                        <path
+                            d="M162 130 L198 130 M162 136 L198 136 M162 142 L198 142 M162 148 L198 148 M162 154 L198 154 M162 160 L198 160 M162 166 L198 166 M162 172 L198 172 M162 178 L198 178 M162 184 L198 184 M162 190 L198 190 M162 196 L198 196"/>
                     </g>
                     <path d="M168 143 L192 202" fill="none" stroke="#d8cbb4" strokeOpacity=".65" strokeWidth=".8"/>
-                    <path d="M168 125 L168 143 M192 176 L192 202" fill="none" stroke="#d8cbb4" strokeOpacity=".8" strokeWidth=".8"/>
+                    <path d="M168 125 L168 143 M192 176 L192 202" fill="none" stroke="#d8cbb4" strokeOpacity=".8"
+                          strokeWidth=".8"/>
 
-                    <path d="M168 126 Q180 143 192 176" fill="none" stroke="#09251e" strokeOpacity=".65" strokeWidth="3" strokeLinecap="round"/>
-                    <path d="M168 125 Q180 142 192 175" fill="none" stroke="#fff8e8" strokeWidth="1.6" strokeLinecap="round"/>
+                    <path d="M168 126 Q180 143 192 176" fill="none" stroke="#09251e" strokeOpacity=".65" strokeWidth="3"
+                          strokeLinecap="round"/>
+                    <path d="M168 125 Q180 142 192 175" fill="none" stroke="#fff8e8" strokeWidth="1.6"
+                          strokeLinecap="round"/>
                     <circle cx="168" cy="125" r="2.2" fill="#fff8e8" stroke="#8f7657" strokeWidth=".7"/>
                     <circle cx="192" cy="176" r="2.2" fill="#fff8e8" stroke="#8f7657" strokeWidth=".7"/>
 
-                    <path d="M168 120 L168 147 M192 171 L192 207" stroke="#f7ead3" strokeWidth="2.5" strokeLinecap="round"/>
+                    <path d="M168 120 L168 147 M192 171 L192 207" stroke="#f7ead3" strokeWidth="2.5"
+                          strokeLinecap="round"/>
                     <circle cx="168" cy="120" r="2.25" fill="#fff8e8"/>
                     <circle cx="192" cy="171" r="2.25" fill="#fff8e8"/>
-                    <path d="M163 146 L173 146 L172 152 L164 152 Z M187 205 L197 205 L196 212 L188 212 Z" fill="#d8cbb4" stroke="#fff8e8" strokeWidth=".7"/>
-                    <path d="M165 152 L171 152 M189 212 L195 212" stroke="#8f7657" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path d="M163 146 L173 146 L172 152 L164 152 Z M187 205 L197 205 L196 212 L188 212 Z" fill="#d8cbb4"
+                          stroke="#fff8e8" strokeWidth=".7"/>
+                    <path d="M165 152 L171 152 M189 212 L195 212" stroke="#8f7657" strokeWidth="1.5"
+                          strokeLinecap="round"/>
                 </g>
 
-                <ellipse className="table-tennis-ball-shadow" cx="0" cy="0" rx="10" ry="3.5" fill="#00150f" opacity=".42"/>
+                <ellipse className="table-tennis-ball-shadow" cx="0" cy="0" rx="10" ry="3.5" fill="#00150f"
+                         opacity=".42"/>
 
                 <g className="table-tennis-paddle-left">
                     <path d="M23 130 L35 151" stroke="url(#handle)" strokeWidth="12" strokeLinecap="round"/>
-                    <ellipse cx="14" cy="108" rx="25" ry="31" transform="rotate(-28 14 108)" fill="#e65123" stroke="#f8e5cb" strokeWidth="5"/>
+                    <ellipse cx="14" cy="108" rx="25" ry="31" transform="rotate(-28 14 108)" fill="#e65123"
+                             stroke="#f8e5cb" strokeWidth="5"/>
                     <ellipse cx="8" cy="100" rx="11" ry="16" transform="rotate(-28 8 100)" fill="white" opacity=".1"/>
                 </g>
                 <g className="table-tennis-paddle-right">
                     <path d="M337 130 L325 151" stroke="url(#handle)" strokeWidth="12" strokeLinecap="round"/>
-                    <ellipse cx="346" cy="108" rx="25" ry="31" transform="rotate(28 346 108)" fill="#14243d" stroke="#f8e5cb" strokeWidth="5"/>
-                    <ellipse cx="352" cy="100" rx="11" ry="16" transform="rotate(28 352 100)" fill="white" opacity=".09"/>
+                    <ellipse cx="346" cy="108" rx="25" ry="31" transform="rotate(28 346 108)" fill="#14243d"
+                             stroke="#f8e5cb" strokeWidth="5"/>
+                    <ellipse cx="352" cy="100" rx="11" ry="16" transform="rotate(28 352 100)" fill="white"
+                             opacity=".09"/>
                 </g>
 
                 <g className="table-tennis-impact table-tennis-impact-left">
-                    <path d="M2 75 L-5 62 M12 70 L11 54 M-4 87 L-17 81" stroke="#ffb067" strokeWidth="3" strokeLinecap="round"/>
+                    <path d="M2 75 L-5 62 M12 70 L11 54 M-4 87 L-17 81" stroke="#ffb067" strokeWidth="3"
+                          strokeLinecap="round"/>
                 </g>
                 <g className="table-tennis-impact table-tennis-impact-right">
-                    <path d="M358 75 L365 62 M348 70 L349 54 M364 87 L377 81" stroke="#ffb067" strokeWidth="3" strokeLinecap="round"/>
+                    <path d="M358 75 L365 62 M348 70 L349 54 M364 87 L377 81" stroke="#ffb067" strokeWidth="3"
+                          strokeLinecap="round"/>
                 </g>
 
                 <circle className="table-tennis-ball" r="8" fill="url(#ball-fill)" filter="url(#ball-glow)"/>
@@ -561,7 +583,7 @@ function SectionTitle({
 function playerStatusLabel(player: PlayerView) {
     if (player.withdrawnAt) return "Turnuvadan ayrıldı";
     if (player.eliminatedAt) return "Elendi";
-    return "Turnuvada";
+    return "Eşleşme Bekliyor";
 }
 
 function useInfinite(nextOffset: number | null, load: (offset: number) => Promise<void>) {
@@ -584,16 +606,15 @@ function useInfinite(nextOffset: number | null, load: (offset: number) => Promis
 function RegisterDialog({
                             open,
                             onOpenChange,
-                            onDone,
                         }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onDone: () => Promise<void>;
 }) {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [submitted, setSubmitted] = useState(false);
 
     async function submit(event: FormEvent) {
         event.preventDefault();
@@ -604,10 +625,7 @@ function RegisterDialog({
                 method: "POST",
                 body: JSON.stringify({firstName, lastName}),
             });
-            onOpenChange(false);
-            setFirstName("");
-            setLastName("");
-            await onDone();
+            setSubmitted(true);
         } catch (err) {
             setError(publicErrorMessage(err, "Turnuvaya katılım tamamlanamadı."));
         } finally {
@@ -616,16 +634,44 @@ function RegisterDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent title="Ben de varım!" description="Adını yazdır, raketini kap ve hikâyeye katıl.">
-                <form className="space-y-4" onSubmit={submit}>
-                    <Field label="Ad" value={firstName} onChange={setFirstName} required/>
-                    <Field label="Soyad" value={lastName} onChange={setLastName} required/>
-                    {error ? <p className="text-sm text-red-700">{error}</p> : null}
-                    <Button type="submit" className="w-full" disabled={busy}>
-                        {busy ? "Adın yazılıyor..." : "Hikâyeye katıl"}
+        <Dialog open={open} onOpenChange={(nextOpen) => {
+            onOpenChange(nextOpen);
+            if (!nextOpen) {
+                setSubmitted(false);
+                setFirstName("");
+                setLastName("");
+                setError(null);
+            }
+        }}>
+            <DialogContent
+                title={submitted ? "Başvurun alındı" : "Ben de varım!"}
+                description={submitted
+                    ? "Başvurun turnuva yöneticisine iletildi. Onaylandıktan sonra adını katılımcılar listesinde görebilirsin."
+                    : "Adını gönder; turnuva yöneticisi başvurunu inceleyecek."}
+            >
+                {submitted ? (
+                    <Button
+                        type="button"
+                        className="w-full"
+                        onClick={() => {
+                            setSubmitted(false);
+                            setFirstName("");
+                            setLastName("");
+                            onOpenChange(false);
+                        }}
+                    >
+                        Tamam
                     </Button>
-                </form>
+                ) : (
+                    <form className="space-y-4" onSubmit={submit}>
+                        <Field label="Ad" value={firstName} onChange={setFirstName} required/>
+                        <Field label="Soyad" value={lastName} onChange={setLastName} required/>
+                        {error ? <p className="text-sm text-red-700">{error}</p> : null}
+                        <Button type="submit" className="w-full" disabled={busy}>
+                            {busy ? "Başvuru gönderiliyor..." : "Başvuruyu gönder"}
+                        </Button>
+                    </form>
+                )}
             </DialogContent>
         </Dialog>
     );
@@ -796,6 +842,8 @@ const publicErrorMessages: Record<string, string> = {
     "This browser is already listed. Edit your name instead.":
         "Bu tarayıcıdan zaten katıldın. Bilgilerini düzenleyebilirsin.",
     "That name is already on the list.": "Bu isim zaten listede.",
+    "This browser already has a registration awaiting review.":
+        "Bu tarayıcıdan gönderilmiş, inceleme bekleyen bir başvuru var.",
     "Player not found.": "Oyuncu bulunamadı.",
     "You can only edit your own listing.": "Yalnızca kendi bilgilerini düzenleyebilirsin.",
     "Invalid update.": "Güncelleme bilgileri geçersiz.",

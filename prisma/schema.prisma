@@ -8,25 +8,27 @@ datasource db {
 }
 
 model Player {
-  id            String    @id @default(cuid())
-  firstName     String
-  lastName      String
-  firstNameNorm String
-  lastNameNorm  String
-  department    String?
-  wins          Int       @default(0)
-  losses        Int       @default(0)
-  withdrawnAt   DateTime?
-  eliminatedAt  DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  firstName          String
+  lastName           String
+  firstNameNorm      String
+  lastNameNorm       String
+  department         String?
+  registrationStatus String    @default("APPROVED")
+  wins               Int       @default(0)
+  losses             Int       @default(0)
+  withdrawnAt        DateTime?
+  eliminatedAt       DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  matchesA        Match[]       @relation("PlayerA")
-  matchesB        Match[]       @relation("PlayerB")
-  reportedMatches Match[]       @relation("ReportedBy")
-  wonMatches      Match[]       @relation("Winner")
+  matchesA        Match[] @relation("PlayerA")
+  matchesB        Match[] @relation("PlayerB")
+  reportedMatches Match[] @relation("ReportedBy")
+  wonMatches      Match[] @relation("Winner")
 
   @@unique([firstNameNorm, lastNameNorm])
+  @@index([registrationStatus])
 }
 
 model Match {
@@ -42,10 +44,10 @@ model Match {
   confirmedAt        DateTime?
   createdAt          DateTime  @default(now())
 
-  playerA      Player        @relation("PlayerA", fields: [playerAId], references: [id])
-  playerB      Player        @relation("PlayerB", fields: [playerBId], references: [id])
-  reportedBy   Player?       @relation("ReportedBy", fields: [reportedByPlayerId], references: [id])
-  winner       Player?       @relation("Winner", fields: [winnerId], references: [id])
+  playerA    Player  @relation("PlayerA", fields: [playerAId], references: [id])
+  playerB    Player  @relation("PlayerB", fields: [playerBId], references: [id])
+  reportedBy Player? @relation("ReportedBy", fields: [reportedByPlayerId], references: [id])
+  winner     Player? @relation("Winner", fields: [winnerId], references: [id])
 }
 
 model Settings {

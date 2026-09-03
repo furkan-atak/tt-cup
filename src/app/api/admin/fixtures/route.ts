@@ -16,7 +16,7 @@ export async function POST() {
     }
 
     const players = await prisma.player.findMany({
-        where: {withdrawnAt: null, eliminatedAt: null},
+        where: {registrationStatus: "APPROVED", withdrawnAt: null, eliminatedAt: null},
         select: {id: true},
     });
     if (players.length < 2) {
@@ -42,5 +42,9 @@ export async function POST() {
     }
 
     await prisma.match.createMany({data: fixtures});
-    return Response.json({created: fixtures.length, round, byePlayerId: shuffled.length % 2 ? shuffled.at(-1)?.id : null});
+    return Response.json({
+        created: fixtures.length,
+        round,
+        byePlayerId: shuffled.length % 2 ? shuffled.at(-1)?.id : null
+    });
 }

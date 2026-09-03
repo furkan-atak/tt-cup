@@ -7,7 +7,10 @@ type PlayerState = {
 };
 
 export async function recomputeTournamentState() {
-    const players = await prisma.player.findMany({select: {id: true}});
+    const players = await prisma.player.findMany({
+        where: {registrationStatus: "APPROVED"},
+        select: {id: true},
+    });
     const matches = await prisma.match.findMany({
         where: {status: "CONFIRMED", round: {not: null}},
         orderBy: [{round: "asc"}, {confirmedAt: "asc"}, {createdAt: "asc"}],

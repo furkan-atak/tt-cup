@@ -19,19 +19,19 @@ export async function GET(
 ) {
     const {id} = await ctx.params;
     const player = await prisma.player.findUnique({where: {id}});
-    if (!player) {
+    if (!player || player.registrationStatus !== "APPROVED") {
         return jsonError("Player not found.", 404);
     }
 
     const matches = await prisma.match.findMany({
-            where: {
-                status: "CONFIRMED",
-                OR: [{playerAId: id}, {playerBId: id}],
-            },
-            orderBy: {confirmedAt: "desc"},
-            take: 20,
-            include: {playerA: true, playerB: true, winner: true},
-        });
+        where: {
+            status: "CONFIRMED",
+            OR: [{playerAId: id}, {playerBId: id}],
+        },
+        orderBy: {confirmedAt: "desc"},
+        take: 20,
+        include: {playerA: true, playerB: true, winner: true},
+    });
 
     return Response.json({
         player: serializePlayer(player),
@@ -64,7 +64,7 @@ export async function PATCH(
     }
 
     const player = await prisma.player.findUnique({where: {id}});
-    if (!player) {
+    if (!player || player.registrationStatus !== "APPROVED") {
         return jsonError("Player not found.", 404);
     }
 
@@ -133,7 +133,7 @@ export async function DELETE(
     }
 
     const player = await prisma.player.findUnique({where: {id}});
-    if (!player) {
+    if (!player || player.registrationStatus !== "APPROVED") {
         return jsonError("Player not found.", 404);
     }
 

@@ -15,7 +15,7 @@ export function formatDate(value: string | Date | null | undefined) {
     if (Number.isNaN(date.getTime())) return null;
     return date.toLocaleDateString("tr-TR", {
         day: "numeric",
-        month: "short",
+        month: "long",
         year: "numeric",
     });
 }
