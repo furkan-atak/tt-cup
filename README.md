@@ -2,8 +2,7 @@
 
 Single-page company elimination tournament: people register, play **best of 3**, and winners advance to the next round.
 
-This is a **Next.js** app (the page **and** a small API) with a **SQLite** file on disk. It is not frontend-only, and it
-is not part of Pasaj.
+This is a **Next.js** app (the page **and** a small API) with a **SQLite** file on disk.
 
 ## Run locally
 
