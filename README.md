@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Office Table Tennis Cup
 
-## Getting Started
+Single-page company tournament: people add their first and last name, play **best of 3**, and a live Elo ranking updates when results are confirmed.
 
-First, run the development server:
+This is a **Next.js** app (the page **and** a small API) with a **SQLite** file on disk. It is not frontend-only, and it is not part of Pasaj.
+
+## Run locally
 
 ```bash
+cd /Users/TCFUATAK/workspace/tt-cup
+cp .env.example .env   # already created for you
+npm install
+npm run db:setup
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Defaults in `.env`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Default | Purpose |
+|---|---|---|
+| `DATABASE_URL` | `file:./dev.db` | SQLite file under `prisma/` |
+| `AUTH_SECRET` | (change in real use) | Signs the “this is me” cookie |
+| `TT_JOIN_CODE` | `paddle` | Shared code on the register form |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / `changeme` | Hidden staff desk |
 
-## Learn More
+## How it works
 
-To learn more about Next.js, take a look at the following resources:
+- **Players:** first name + last name. No email, no login. The browser that registered can edit or remove **only that listing**.
+- **Matches:** best of 3, games to 11, win by 2 from 10–10. Opponent confirms; then Elo updates.
+- **Admin:** not linked from the public page. Open `/admin/login` if you know the URL.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — local server
+- `npm run db:setup` — create SQLite tables and seed demo players
+- `npm run db:seed` — reset demo data
