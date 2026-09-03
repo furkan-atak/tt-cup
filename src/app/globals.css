@@ -22,3 +22,110 @@ body {
   font-family: var(--font-display), ui-serif, serif;
   font-optical-sizing: auto;
 }
+
+@keyframes table-tennis-ball {
+  0%, 100% { offset-distance: 0%; }
+  50% { offset-distance: 100%; }
+}
+
+@keyframes table-tennis-left-paddle {
+  0%, 88%, 100% { transform: rotate(0deg); }
+  4% { transform: rotate(10deg); }
+  10% { transform: rotate(-5deg); }
+}
+
+@keyframes table-tennis-right-paddle {
+  0%, 40%, 60%, 100% { transform: rotate(0deg); }
+  48% { transform: rotate(-10deg); }
+  54% { transform: rotate(5deg); }
+}
+
+@keyframes table-tennis-shadow {
+  0%, 100% { transform: translate(33px, 153px) scale(.55); opacity: .3; }
+  18% { transform: translate(111px, 164px) scale(1); opacity: .48; }
+  50% { transform: translate(327px, 153px) scale(.55); opacity: .3; }
+  68% { transform: translate(249px, 164px) scale(1); opacity: .48; }
+  34%, 84% { opacity: .15; }
+}
+
+@keyframes table-tennis-impact-left {
+  0%, 8% { opacity: 1; transform: scale(1); }
+  13%, 96% { opacity: 0; transform: scale(1.25); }
+  97%, 100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes table-tennis-impact-right {
+  0%, 46% { opacity: 0; transform: scale(1.25); }
+  49%, 55% { opacity: 1; transform: scale(1); }
+  60%, 100% { opacity: 0; transform: scale(1.25); }
+}
+
+@keyframes table-tennis-breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+.table-tennis-ball {
+  offset-path: path("M 33 101 C 61 108 87 129 111 164 C 128 117 152 91 180 96 C 208 91 232 117 249 164 C 273 129 299 108 327 101");
+  offset-rotate: 0deg;
+  animation: table-tennis-ball 2.15s cubic-bezier(.42, 0, .58, 1) infinite;
+}
+
+.table-tennis-ball-shadow {
+  transform-origin: center;
+  animation: table-tennis-shadow 2.15s cubic-bezier(.42, 0, .58, 1) infinite;
+}
+
+.table-tennis-paddle-left {
+  transform-box: fill-box;
+  transform-origin: 75% 85%;
+  animation: table-tennis-left-paddle 2.15s ease-in-out infinite;
+}
+
+.table-tennis-paddle-right {
+  transform-box: fill-box;
+  transform-origin: 25% 85%;
+  animation: table-tennis-right-paddle 2.15s ease-in-out infinite;
+}
+
+.table-tennis-impact {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.table-tennis-impact-left {
+  animation: table-tennis-impact-left 2.15s ease-out infinite;
+}
+
+.table-tennis-impact-right {
+  animation: table-tennis-impact-right 2.15s ease-out infinite;
+}
+
+.table-tennis-table,
+.table-tennis-net {
+  animation: table-tennis-breathe 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-tennis-ball,
+  .table-tennis-ball-shadow,
+  .table-tennis-paddle-left,
+  .table-tennis-paddle-right,
+  .table-tennis-impact,
+  .table-tennis-table,
+  .table-tennis-net {
+    animation: none;
+  }
+
+  .table-tennis-ball {
+    offset-distance: 50%;
+  }
+
+  .table-tennis-ball-shadow {
+    transform: translate(180px, 169px);
+  }
+
+  .table-tennis-impact {
+    opacity: 0;
+  }
+}

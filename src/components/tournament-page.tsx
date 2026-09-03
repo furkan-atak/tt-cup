@@ -108,7 +108,12 @@ export function TournamentPage() {
             </header>
 
             <main id="top">
-                <Hero settings={settings} onJoin={() => setRegisterOpen(true)} listed={Boolean(me && !me.withdrawnAt)}/>
+                <Hero
+                    settings={settings}
+                    onJoin={() => setRegisterOpen(true)}
+                    onManage={() => setEditOpen(true)}
+                    listed={Boolean(me && !me.withdrawnAt)}
+                />
 
                 {error ? (
                     <p className="mx-auto max-w-5xl px-4 pt-4 text-sm text-red-700">{error}</p>
@@ -265,7 +270,7 @@ export function TournamentPage() {
             </main>
 
             <footer className="border-t border-ink/10 py-8 text-center text-xs text-ink/40">
-                Furkan Atak
+                Designed By Furkan Atak
             </footer>
 
             <RegisterDialog
@@ -295,12 +300,14 @@ export function TournamentPage() {
 }
 
 function Hero({
-                  settings,
-                  onJoin,
-                  listed,
-              }: {
+                   settings,
+                   onJoin,
+                   onManage,
+                   listed,
+               }: {
     settings: SettingsView | null;
     onJoin: () => void;
+    onManage: () => void;
     listed: boolean;
 }) {
     const dates = [formatDate(settings?.startDate), formatDate(settings?.endDate)]
@@ -315,23 +322,194 @@ function Hero({
                 <div className="absolute top-0 left-0 h-full w-24 border-r-2 border-white/40"/>
                 <div className="absolute top-0 right-0 h-full w-24 border-l-2 border-white/40"/>
             </div>
-            <div className="relative mx-auto max-w-5xl px-4 py-20 sm:py-28">
-                <p className="text-sm font-semibold tracking-[0.2em] text-ball uppercase">Ofis ligi</p>
-                <h1 className="mt-3 max-w-xl font-display text-5xl leading-none sm:text-6xl">
-                    {publicEventName(settings)}
-                </h1>
-                <p className="mt-4 max-w-lg text-white/80">
-                    Ofisin raketleri sahneye çıkıyor. Adını listeye yazdır; rakibini kura belirlesin.
-                    Maçlar oynandıkça sıralamadaki hikâyen şekillensin.
-                </p>
-                {dates ? <p className="mt-2 text-sm text-white/60">{dates}</p> : null}
-                {!listed && settings?.registrationOpen !== false ? (
-                    <Button className="mt-8" size="lg" onClick={onJoin}>
-                        Ben de varım!
-                    </Button>
-                ) : null}
+            <div className="relative mx-auto grid max-w-5xl items-center gap-10 px-4 py-16 sm:py-24 md:grid-cols-[minmax(0,1fr)_22rem]">
+                <div className="relative z-10">
+                    <p className="text-sm font-semibold tracking-[0.2em] text-ball uppercase">Ofis ligi</p>
+                    <h1 className="mt-3 max-w-xl font-display text-5xl leading-none sm:text-6xl">
+                        {publicEventName(settings)}
+                    </h1>
+                    <TournamentCountdown/>
+                    <p className="mt-4 max-w-lg text-white/80">
+                        Ofisin raketleri sahneye çıkıyor. Adını listeye yazdır; rakibini kura belirlesin.
+                        Maçlar oynandıkça sıralamadaki hikâyen şekillensin.
+                    </p>
+                    {dates ? <p className="mt-2 text-sm text-white/60">{dates}</p> : null}
+                    {listed ? (
+                        <Button className="mt-8" size="lg" variant="outline" onClick={onManage}>
+                            <Pencil className="h-4 w-4"/>
+                            Bilgilerim
+                        </Button>
+                    ) : (
+                        <Button
+                            className="mt-8"
+                            size="lg"
+                            onClick={onJoin}
+                            disabled={settings?.registrationOpen === false}
+                        >
+                            {settings?.registrationOpen === false ? "Katılım kapalı" : "Ben de varım!"}
+                        </Button>
+                    )}
+                </div>
+                <TableTennisAnimation/>
             </div>
         </section>
+    );
+}
+
+const tournamentStart = new Date("2026-09-14T00:00:00+03:00");
+
+function TournamentCountdown() {
+    const [remaining, setRemaining] = useState<ReturnType<typeof countdownParts> | null>(null);
+
+    useEffect(() => {
+        function updateCountdown() {
+            setRemaining(countdownParts(tournamentStart.getTime() - Date.now()));
+        }
+
+        updateCountdown();
+        const timer = window.setInterval(updateCountdown, 1000);
+        return () => window.clearInterval(timer);
+    }, []);
+
+    return (
+        <div className="mt-6 min-h-20" aria-live="off">
+            <p className="text-xs font-semibold tracking-[0.16em] text-white/55 uppercase">
+                Turnuva&apos;nın başlamasına kalan süre
+            </p>
+            {remaining?.started ? (
+                <p className="mt-2 font-display text-2xl text-ball">Turnuva başladı!</p>
+            ) : (
+                <div className="mt-2 flex gap-2" aria-label={remaining ? countdownLabel(remaining) : "Geri sayım yükleniyor"}>
+                    {[
+                        [remaining?.days, "Gün"],
+                        [remaining?.hours, "Saat"],
+                        [remaining?.minutes, "Dakika"],
+                        [remaining?.seconds, "Saniye"],
+                    ].map(([value, label]) => (
+                        <div key={label} className="min-w-14 rounded-lg border border-white/15 bg-black/10 px-2 py-2 text-center backdrop-blur-sm">
+                            <span className="block font-display text-2xl leading-none tabular-nums text-white">
+                                {value === undefined ? "--" : String(value).padStart(2, "0")}
+                            </span>
+                            <span className="mt-1 block text-[9px] font-semibold tracking-wider text-white/50 uppercase">
+                                {label}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function countdownParts(milliseconds: number) {
+    const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+    return {
+        started: milliseconds <= 0,
+        days: Math.floor(totalSeconds / 86_400),
+        hours: Math.floor((totalSeconds % 86_400) / 3_600),
+        minutes: Math.floor((totalSeconds % 3_600) / 60),
+        seconds: totalSeconds % 60,
+    };
+}
+
+function countdownLabel(remaining: ReturnType<typeof countdownParts>) {
+    return `${remaining.days} gün, ${remaining.hours} saat, ${remaining.minutes} dakika, ${remaining.seconds} saniye kaldı`;
+}
+
+function TableTennisAnimation() {
+    return (
+        <div
+            className="table-tennis-scene pointer-events-none relative mx-auto w-full max-w-sm select-none"
+            aria-hidden="true"
+        >
+            <div className="absolute inset-8 rounded-full bg-ball/15 blur-3xl"/>
+            <svg viewBox="0 0 360 260" className="relative h-auto w-full overflow-visible">
+                <defs>
+                    <linearGradient id="table-top" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stopColor="#247e68"/>
+                        <stop offset="1" stopColor="#11503f"/>
+                    </linearGradient>
+                    <linearGradient id="table-edge" x1="0" y1="0" x2="0" y2="1">
+                        <stop stopColor="#0d382e"/>
+                        <stop offset="1" stopColor="#071f1a"/>
+                    </linearGradient>
+                    <linearGradient id="handle" x1="0" y1="0" x2="1" y2="1">
+                        <stop stopColor="#edc083"/>
+                        <stop offset="1" stopColor="#9d6236"/>
+                    </linearGradient>
+                    <radialGradient id="ball-fill" cx="35%" cy="30%">
+                        <stop stopColor="#fff4c6"/>
+                        <stop offset="0.35" stopColor="#ff9b46"/>
+                        <stop offset="1" stopColor="#ff5a0a"/>
+                    </radialGradient>
+                    <filter id="scene-shadow" x="-40%" y="-40%" width="180%" height="200%">
+                        <feGaussianBlur stdDeviation="7"/>
+                    </filter>
+                    <filter id="ball-glow" x="-200%" y="-200%" width="500%" height="500%">
+                        <feGaussianBlur stdDeviation="4" result="blur"/>
+                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <clipPath id="net-clip">
+                        <path d="M168 125 L192 176 L192 202 L168 143 Z"/>
+                    </clipPath>
+                </defs>
+
+                <ellipse cx="180" cy="231" rx="139" ry="17" fill="#00150f" opacity=".42" filter="url(#scene-shadow)"/>
+
+                <g className="table-tennis-table">
+                    <path d="M18 204 L342 204 L326 220 L34 220 Z" fill="url(#table-edge)"/>
+                    <path d="M55 216 L70 216 L62 255 L50 255 Z" fill="#08261f"/>
+                    <path d="M290 216 L305 216 L310 255 L298 255 Z" fill="#08261f"/>
+                    <path d="M18 202 L49 143 L311 143 L342 202 Z" fill="url(#table-top)" stroke="white" strokeOpacity=".85" strokeWidth="2"/>
+                    <path d="M49 172 L326 172" stroke="white" strokeOpacity=".5" strokeWidth="1.3"/>
+                    <path d="M180 143 L180 202" stroke="white" strokeOpacity=".2"/>
+                    <path d="M49 143 L18 202 M311 143 L342 202" stroke="white" strokeOpacity=".2"/>
+                </g>
+
+                <g className="table-tennis-net">
+                    <path d="M168 125 L192 176 L192 202 L168 143 Z" fill="#061d18" fillOpacity=".56"/>
+                    <g clipPath="url(#net-clip)" fill="none" stroke="#f8f1df" strokeOpacity=".56" strokeWidth=".55">
+                        <path d="M171 121 L171 207 M175 121 L175 207 M179 121 L179 207 M183 121 L183 207 M187 121 L187 207 M191 121 L191 207"/>
+                        <path d="M162 130 L198 130 M162 136 L198 136 M162 142 L198 142 M162 148 L198 148 M162 154 L198 154 M162 160 L198 160 M162 166 L198 166 M162 172 L198 172 M162 178 L198 178 M162 184 L198 184 M162 190 L198 190 M162 196 L198 196"/>
+                    </g>
+                    <path d="M168 143 L192 202" fill="none" stroke="#d8cbb4" strokeOpacity=".65" strokeWidth=".8"/>
+                    <path d="M168 125 L168 143 M192 176 L192 202" fill="none" stroke="#d8cbb4" strokeOpacity=".8" strokeWidth=".8"/>
+
+                    <path d="M168 126 Q180 143 192 176" fill="none" stroke="#09251e" strokeOpacity=".65" strokeWidth="3" strokeLinecap="round"/>
+                    <path d="M168 125 Q180 142 192 175" fill="none" stroke="#fff8e8" strokeWidth="1.6" strokeLinecap="round"/>
+                    <circle cx="168" cy="125" r="2.2" fill="#fff8e8" stroke="#8f7657" strokeWidth=".7"/>
+                    <circle cx="192" cy="176" r="2.2" fill="#fff8e8" stroke="#8f7657" strokeWidth=".7"/>
+
+                    <path d="M168 120 L168 147 M192 171 L192 207" stroke="#f7ead3" strokeWidth="2.5" strokeLinecap="round"/>
+                    <circle cx="168" cy="120" r="2.25" fill="#fff8e8"/>
+                    <circle cx="192" cy="171" r="2.25" fill="#fff8e8"/>
+                    <path d="M163 146 L173 146 L172 152 L164 152 Z M187 205 L197 205 L196 212 L188 212 Z" fill="#d8cbb4" stroke="#fff8e8" strokeWidth=".7"/>
+                    <path d="M165 152 L171 152 M189 212 L195 212" stroke="#8f7657" strokeWidth="1.5" strokeLinecap="round"/>
+                </g>
+
+                <ellipse className="table-tennis-ball-shadow" cx="0" cy="0" rx="10" ry="3.5" fill="#00150f" opacity=".42"/>
+
+                <g className="table-tennis-paddle-left">
+                    <path d="M23 130 L35 151" stroke="url(#handle)" strokeWidth="12" strokeLinecap="round"/>
+                    <ellipse cx="14" cy="108" rx="25" ry="31" transform="rotate(-28 14 108)" fill="#e65123" stroke="#f8e5cb" strokeWidth="5"/>
+                    <ellipse cx="8" cy="100" rx="11" ry="16" transform="rotate(-28 8 100)" fill="white" opacity=".1"/>
+                </g>
+                <g className="table-tennis-paddle-right">
+                    <path d="M337 130 L325 151" stroke="url(#handle)" strokeWidth="12" strokeLinecap="round"/>
+                    <ellipse cx="346" cy="108" rx="25" ry="31" transform="rotate(28 346 108)" fill="#14243d" stroke="#f8e5cb" strokeWidth="5"/>
+                    <ellipse cx="352" cy="100" rx="11" ry="16" transform="rotate(28 352 100)" fill="white" opacity=".09"/>
+                </g>
+
+                <g className="table-tennis-impact table-tennis-impact-left">
+                    <path d="M2 75 L-5 62 M12 70 L11 54 M-4 87 L-17 81" stroke="#ffb067" strokeWidth="3" strokeLinecap="round"/>
+                </g>
+                <g className="table-tennis-impact table-tennis-impact-right">
+                    <path d="M358 75 L365 62 M348 70 L349 54 M364 87 L377 81" stroke="#ffb067" strokeWidth="3" strokeLinecap="round"/>
+                </g>
+
+                <circle className="table-tennis-ball" r="8" fill="url(#ball-fill)" filter="url(#ball-glow)"/>
+            </svg>
+        </div>
     );
 }
 
