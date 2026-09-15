@@ -74,7 +74,7 @@ export default function AdminPage() {
                 <SettingsForm settings={settings} onSave={load}/>
                 <RegistrationReview requests={registrations} onSave={load}/>
                 <AddPlayerForm onSave={load}/>
-                <FixtureDesk matches={matches} onSave={load}/>
+                <FixtureDesk matches={matches} players={players} onSave={load}/>
 
                 <section>
                     <h2 className="font-display text-2xl">Players</h2>
@@ -136,44 +136,17 @@ export default function AdminPage() {
 
                 <section>
                     <h2 className="font-display text-2xl">Match history</h2>
-                    <ul className="mt-3 space-y-2">
+                    <div className="mt-3 space-y-2">
                         {matches.filter((match) => match.status !== "PENDING").map((match) => (
-                            <li
+                            <ManagedMatch
                                 key={match.id}
-                                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm"
-                            >
-                <span>
-                  {match.round ? `Round ${match.round} · ` : ""}{match.playerA.name} vs {match.playerB.name} · {gamesLabel(match.games)} ·{" "}
-                    {match.status}
-                </span>
-                                <span className="flex gap-2">
-                                    {match.status === "VOID" ? (
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={async () => {
-                                                await readApi(`/api/matches/${match.id}/void`, {method: "DELETE"});
-                                                await load();
-                                            }}
-                                        >
-                                            Restore
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            size="sm"
-                                            variant="danger"
-                                            onClick={async () => {
-                                                await readApi(`/api/matches/${match.id}/void`, {method: "POST"});
-                                                await load();
-                                            }}
-                                        >
-                                            Void
-                                        </Button>
-                                    )}
-                </span>
-                            </li>
+                                match={match}
+                                players={players}
+                                onSave={load}
+                                showResult
+                            />
                         ))}
-                    </ul>
+                    </div>
                 </section>
             </div>
         </div>
@@ -343,9 +316,11 @@ function AddPlayerForm({onSave}: { onSave: () => Promise<void> }) {
 
 function FixtureDesk({
                          matches,
+                         players,
                          onSave,
                      }: {
     matches: MatchView[];
+    players: PlayerView[];
     onSave: () => Promise<void>;
 }) {
     const fixtures = matches.filter((match) => match.status === "PENDING");
@@ -384,10 +359,14 @@ function FixtureDesk({
                 </Button>
             </div>
             {message ? <p className="text-sm text-ink/70">{message}</p> : null}
+            <AddMatchForm players={players} onSave={onSave}/>
             {fixtures.length > 0 ? (
                 <div className="space-y-3">
                     {fixtures.map((match) => (
-                        <FixtureResultForm key={match.id} match={match} onSave={onSave}/>
+                        <div key={match.id} className="space-y-2 rounded-xl bg-paper p-4">
+                            <ManagedMatch match={match} players={players} onSave={onSave}/>
+                            <FixtureResultForm match={match} onSave={onSave}/>
+                        </div>
                     ))}
                 </div>
             ) : (
@@ -396,6 +375,219 @@ function FixtureDesk({
                 </p>
             )}
         </section>
+    );
+}
+
+function AddMatchForm({players, onSave}: { players: PlayerView[]; onSave: () => Promise<void> }) {
+    const activePlayers = players.filter((player) => !player.withdrawnAt && !player.eliminatedAt);
+    const [playerAId, setPlayerAId] = useState("");
+    const [playerBId, setPlayerBId] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    async function submit(event: FormEvent) {
+        event.preventDefault();
+        setBusy(true);
+        setError(null);
+        try {
+            await readApi("/api/admin/matches", {
+                method: "POST",
+                body: JSON.stringify({playerAId, playerBId}),
+            });
+            setPlayerAId("");
+            setPlayerBId("");
+            await onSave();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not add match.");
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <form onSubmit={submit} className="space-y-3 rounded-xl border border-ink/10 bg-paper p-4">
+            <div>
+                <h3 className="font-semibold">Add match manually</h3>
+                <p className="text-xs text-ink/50">Adds a pending match to the current fixture round.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                <PlayerSelect
+                    id="new-match-player-a"
+                    label="Player A"
+                    players={activePlayers}
+                    value={playerAId}
+                    onChange={setPlayerAId}
+                    excludedId={playerBId}
+                />
+                <PlayerSelect
+                    id="new-match-player-b"
+                    label="Player B"
+                    players={activePlayers}
+                    value={playerBId}
+                    onChange={setPlayerBId}
+                    excludedId={playerAId}
+                />
+                <Button type="submit" size="sm" disabled={busy || !playerAId || !playerBId}>
+                    {busy ? "Adding…" : "Add match"}
+                </Button>
+            </div>
+            {error ? <p className="text-sm text-red-700">{error}</p> : null}
+        </form>
+    );
+}
+
+function ManagedMatch({
+                          match,
+                          players,
+                          onSave,
+                          showResult = false,
+                      }: {
+    match: MatchView;
+    players: PlayerView[];
+    onSave: () => Promise<void>;
+    showResult?: boolean;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [playerAId, setPlayerAId] = useState(match.playerA.id);
+    const [playerBId, setPlayerBId] = useState(match.playerB.id);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    async function savePlayers() {
+        if (match.status === "CONFIRMED" && !confirm("Changing these players will clear the result and return the match to pending. Continue?")) {
+            return;
+        }
+        setBusy(true);
+        setError(null);
+        try {
+            await readApi(`/api/admin/matches/${match.id}`, {
+                method: "PATCH",
+                body: JSON.stringify({playerAId, playerBId}),
+            });
+            setEditing(false);
+            await onSave();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not update match.");
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function deleteMatch() {
+        const warning = match.status === "CONFIRMED"
+            ? "Permanently delete this completed match? Player records will be recalculated."
+            : "Permanently delete this match?";
+        if (!confirm(warning)) return;
+        setBusy(true);
+        setError(null);
+        try {
+            await readApi(`/api/admin/matches/${match.id}`, {method: "DELETE"});
+            await onSave();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not delete match.");
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function toggleVoid() {
+        setBusy(true);
+        setError(null);
+        try {
+            await readApi(`/api/matches/${match.id}/void`, {
+                method: match.status === "VOID" ? "DELETE" : "POST",
+            });
+            await onSave();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not update match.");
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <div className="rounded-xl border border-ink/10 bg-white px-3 py-3 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <span>
+                    {match.round ? `Round ${match.round} · ` : ""}{match.playerA.name} vs {match.playerB.name}
+                    {showResult ? ` · ${gamesLabel(match.games) || "No score"} · ${match.status}` : ""}
+                </span>
+                <span className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" variant="outline" disabled={busy}
+                            onClick={() => setEditing((open) => !open)}>
+                        {editing ? "Cancel" : "Edit players"}
+                    </Button>
+                    {showResult ? (
+                        <Button type="button" size="sm" variant="outline" disabled={busy} onClick={toggleVoid}>
+                            {match.status === "VOID" ? "Restore" : "Void"}
+                        </Button>
+                    ) : null}
+                    <Button type="button" size="sm" variant="danger" disabled={busy} onClick={deleteMatch}>
+                        Delete
+                    </Button>
+                </span>
+            </div>
+            {editing ? (
+                <div className="mt-3 grid gap-3 border-t border-ink/10 pt-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                    <PlayerSelect
+                        id={`edit-${match.id}-player-a`}
+                        label="Player A"
+                        players={players}
+                        value={playerAId}
+                        onChange={setPlayerAId}
+                        excludedId={playerBId}
+                    />
+                    <PlayerSelect
+                        id={`edit-${match.id}-player-b`}
+                        label="Player B"
+                        players={players}
+                        value={playerBId}
+                        onChange={setPlayerBId}
+                        excludedId={playerAId}
+                    />
+                    <Button type="button" size="sm" disabled={busy || !playerAId || !playerBId} onClick={savePlayers}>
+                        {busy ? "Saving…" : "Save players"}
+                    </Button>
+                </div>
+            ) : null}
+            {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
+        </div>
+    );
+}
+
+function PlayerSelect({
+                          id,
+                          label,
+                          players,
+                          value,
+                          onChange,
+                          excludedId,
+                      }: {
+    id: string;
+    label: string;
+    players: PlayerView[];
+    value: string;
+    onChange: (value: string) => void;
+    excludedId?: string;
+}) {
+    return (
+        <div className="space-y-1.5">
+            <Label htmlFor={id}>{label}</Label>
+            <select
+                id={id}
+                className="h-10 w-full rounded-md border border-ink/15 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-ball/70"
+                value={value}
+                required
+                onChange={(event) => onChange(event.target.value)}
+            >
+                <option value="">Select player</option>
+                {players.map((player) => (
+                    <option key={player.id} value={player.id} disabled={player.id === excludedId}>
+                        {player.name}{player.withdrawnAt ? " (withdrawn)" : player.eliminatedAt ? " (eliminated)" : ""}
+                    </option>
+                ))}
+            </select>
+        </div>
     );
 }
 
@@ -434,7 +626,7 @@ function FixtureResultForm({match, onSave}: { match: MatchView; onSave: () => Pr
     }
 
     return (
-        <form onSubmit={submit} className="space-y-4 rounded-xl bg-paper p-4">
+        <form onSubmit={submit} className="space-y-4 border-t border-ink/10 pt-3">
             <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-court">
                     {match.round ? `Round ${match.round}` : "Pending fixture"}

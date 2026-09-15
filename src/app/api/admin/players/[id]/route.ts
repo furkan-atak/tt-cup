@@ -1,6 +1,7 @@
 import {isAdmin} from "@/lib/cookies";
 import {jsonError} from "@/lib/http";
 import {getPrisma} from "@/lib/prisma";
+import {recomputeTournamentState} from "@/lib/tournament";
 
 export async function DELETE(
     _request: Request,
@@ -28,6 +29,7 @@ export async function DELETE(
         },
     });
     await prisma.player.delete({where: {id}});
+    await recomputeTournamentState();
 
     return Response.json({ok: true});
 }
