@@ -216,7 +216,11 @@ export function TournamentPage() {
                     <div className="mt-6 grid gap-3 sm:grid-cols-2">
                         {fixtures.map((match) => (
                             <article key={match.id} className="rounded-2xl border border-court/20 bg-white px-4 py-4">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-court">Sıradaki maç</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-court">
+                                    {isWinnerPlaceholder(match.playerA) || isWinnerPlaceholder(match.playerB)
+                                        ? "Önceki maçlar bekleniyor"
+                                        : "Sıradaki maç"}
+                                </p>
                                 <p className="mt-1 font-semibold">
                                     {match.playerA.name} <span
                                     className="mx-2 text-ink/30">-</span> {match.playerB.name}
@@ -590,7 +594,11 @@ function playerStatusLabel(player: PlayerView) {
     return "Devam Ediyor";
 }
 
-function mergeById<T extends {id: string}>(current: T[], incoming: T[]) {
+function isWinnerPlaceholder(player: PlayerView) {
+    return player.department?.startsWith("fixture-round:") === true;
+}
+
+function mergeById<T extends { id: string }>(current: T[], incoming: T[]) {
     const items = new Map(current.map((item) => [item.id, item]));
     for (const item of incoming) items.set(item.id, item);
     return [...items.values()];

@@ -1,6 +1,7 @@
 import {isAdmin} from "@/lib/cookies";
 import {jsonError} from "@/lib/http";
 import {getPrisma} from "@/lib/prisma";
+import {PLACEHOLDER_STATUS} from "@/lib/placeholders";
 import {recomputeTournamentState} from "@/lib/tournament";
 import {z} from "zod";
 
@@ -117,6 +118,24 @@ export async function DELETE(_request: Request, ctx: RouteContext<"/api/admin/ma
     if (match.status === "CONFIRMED") {
         await recomputeTournamentState();
     }
+    await deleteUnusedPlaceholders([match.playerAId, match.playerBId]);
 
     return Response.json({ok: true});
+}
+
+async function deleteUnusedPlaceholders(playerIds: string[]) {
+    if (playerIds.length === 0) return;
+    const prisma = getPrisma();
+    const placeholders = await prisma.player.findMany({
+        where: {
+            id: {in: playerIds},
+            registrationStatus: PLACEHOLDER_STATUS,
+            matchesA: {none: {}},
+            matchesB: {none: {}},
+        },
+        select: {id: true},
+    });
+    if (placeholders.length > 0) {
+        await prisma.player.deleteMany({where: {id: {in: placeholders.map((player) => player.id)}}});
+    }
 }

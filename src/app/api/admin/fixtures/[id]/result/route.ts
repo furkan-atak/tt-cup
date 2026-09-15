@@ -1,6 +1,7 @@
 import {isAdmin} from "@/lib/cookies";
 import {jsonError, parseGamePayload} from "@/lib/http";
 import {matchWinnerFromGames, validateBestOfThree} from "@/lib/match-rules";
+import {PLACEHOLDER_STATUS} from "@/lib/placeholders";
 import {getPrisma} from "@/lib/prisma";
 import {recomputeTournamentState} from "@/lib/tournament";
 import {z} from "zod";
@@ -14,12 +15,19 @@ export async function POST(request: Request, ctx: RouteContext<"/api/admin/fixtu
 
     const prisma = getPrisma();
     const {id} = await ctx.params;
-    const match = await prisma.match.findUnique({where: {id}});
+    const match = await prisma.match.findUnique({
+        where: {id},
+        include: {playerA: {select: {registrationStatus: true}}, playerB: {select: {registrationStatus: true}}},
+    });
     if (!match) {
         return jsonError("Match not found.", 404);
     }
     if (match.status !== "PENDING") {
         return jsonError("Only pending fixtures can receive a result.");
+    }
+    if (match.playerA.registrationStatus === PLACEHOLDER_STATUS
+        || match.playerB.registrationStatus === PLACEHOLDER_STATUS) {
+        return jsonError("Replace winner placeholders with the actual players before saving a result.", 409);
     }
 
     let body: unknown;

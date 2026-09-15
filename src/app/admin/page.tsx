@@ -324,6 +324,14 @@ function FixtureDesk({
     onSave: () => Promise<void>;
 }) {
     const fixtures = matches.filter((match) => match.status === "PENDING");
+    const latestRound = Math.max(0, ...matches.map((match) => match.round ?? 0));
+    const latestRoundMatches = matches.filter((match) => match.round === latestRound && match.status !== "VOID");
+    const latestRoundHasPlaceholders = latestRoundMatches.some((match) =>
+        isPlaceholder(match.playerA) || isPlaceholder(match.playerB)
+    );
+    const canDraw = matches.length === 0
+        || (latestRoundMatches.length > 0 && !latestRoundHasPlaceholders);
+    const pendingRounds = new Set(fixtures.map((match) => match.round));
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
 
@@ -354,15 +362,17 @@ function FixtureDesk({
                     <h2 className="font-display text-2xl">Fixture draw</h2>
                     <p className="text-sm text-ink/55">Pair the players still in the tournament.</p>
                 </div>
-                <Button type="button" size="sm" onClick={drawFixtures} disabled={busy || fixtures.length > 0}>
+                <Button type="button" size="sm" onClick={drawFixtures} disabled={busy || !canDraw}>
                     {busy ? "Drawing…" : "Draw fixtures"}
                 </Button>
             </div>
             {message ? <p className="text-sm text-ink/70">{message}</p> : null}
-            <AddMatchForm players={players} onSave={onSave}/>
+            {pendingRounds.size <= 1 && !latestRoundHasPlaceholders
+                ? <AddMatchForm players={players} onSave={onSave}/>
+                : null}
             {fixtures.length > 0 ? (
                 <div className="space-y-3">
-                    {fixtures.map((match) => (
+                    {[...fixtures].sort((a, b) => (a.round ?? 0) - (b.round ?? 0)).map((match) => (
                         <div key={match.id} className="space-y-2 rounded-xl bg-paper p-4">
                             <ManagedMatch match={match} players={players} onSave={onSave}/>
                             <FixtureResultForm match={match} onSave={onSave}/>
@@ -600,6 +610,7 @@ function FixtureResultForm({match, onSave}: { match: MatchView; onSave: () => Pr
     const [g3b, setG3b] = useState("");
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const hasPlaceholder = isPlaceholder(match.playerA) || isPlaceholder(match.playerB);
 
     async function submit(event: FormEvent) {
         event.preventDefault();
@@ -633,37 +644,50 @@ function FixtureResultForm({match, onSave}: { match: MatchView; onSave: () => Pr
                 </p>
                 <p className="mt-1 font-semibold">{match.playerA.name} vs {match.playerB.name}</p>
             </div>
-            <div className="overflow-x-auto">
-                <table className="w-full min-w-md text-sm">
-                    <thead>
-                    <tr className="text-left text-xs text-ink/55">
-                        <th className="pb-2 font-medium">Player</th>
-                        <th className="px-1 pb-2 text-center font-medium">Game 1</th>
-                        <th className="px-1 pb-2 text-center font-medium">Game 2</th>
-                        <th className="px-1 pb-2 text-center font-medium">Game 3 (if needed)</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <ScoreRow
-                        name={match.playerA.name}
-                        values={[g1a, g2a, g3a]}
-                        onChange={[setG1a, setG2a, setG3a]}
-                    />
-                    <ScoreRow
-                        name={match.playerB.name}
-                        values={[g1b, g2b, g3b]}
-                        onChange={[setG1b, setG2b, setG3b]}
-                    />
-                    </tbody>
-                </table>
-            </div>
-            <p className="text-xs text-ink/50">Enter the final points for each game after the match is played.</p>
-            {error ? <p className="text-sm text-red-700">{error}</p> : null}
-            <Button type="submit" size="sm" disabled={busy}>
-                {busy ? "Saving…" : "Save result"}
-            </Button>
+            {hasPlaceholder ? (
+                <p className="rounded-lg border border-dashed border-ink/15 px-3 py-4 text-sm text-ink/55">
+                    Replace each winner placeholder with the actual winner before entering this result.
+                </p>
+            ) : (
+                <>
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-md text-sm">
+                            <thead>
+                            <tr className="text-left text-xs text-ink/55">
+                                <th className="pb-2 font-medium">Player</th>
+                                <th className="px-1 pb-2 text-center font-medium">Game 1</th>
+                                <th className="px-1 pb-2 text-center font-medium">Game 2</th>
+                                <th className="px-1 pb-2 text-center font-medium">Game 3 (if needed)</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <ScoreRow
+                                name={match.playerA.name}
+                                values={[g1a, g2a, g3a]}
+                                onChange={[setG1a, setG2a, setG3a]}
+                            />
+                            <ScoreRow
+                                name={match.playerB.name}
+                                values={[g1b, g2b, g3b]}
+                                onChange={[setG1b, setG2b, setG3b]}
+                            />
+                            </tbody>
+                        </table>
+                    </div>
+                    <p className="text-xs text-ink/50">Enter the final points for each game after the match is
+                        played.</p>
+                    {error ? <p className="text-sm text-red-700">{error}</p> : null}
+                    <Button type="submit" size="sm" disabled={busy}>
+                        {busy ? "Saving…" : "Save result"}
+                    </Button>
+                </>
+            )}
         </form>
     );
+}
+
+function isPlaceholder(player: PlayerView) {
+    return player.department?.startsWith("fixture-round:") === true;
 }
 
 function ScoreRow({
